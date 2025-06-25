@@ -1,22 +1,22 @@
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { prisma } from "@/lib/db";
 
 interface Product {
   id: string;
   name: string;
-  description?: string;
+  description?: string | null;
   price: number;
-  imageUrl?: string;
+  imageUrl?: string | null;
 }
 
 async function getProducts(): Promise<Product[]> {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/products`, { cache: 'no-store' });
-    if (!res.ok) throw new Error('Failed to fetch products');
-    return res.json();
+    const products = await prisma.product.findMany({ orderBy: { createdAt: "desc" } });
+    return products;
   } catch (error) {
-    console.error('Error fetching products:', error);
+    console.error("Error fetching products from Prisma:", error);
     return [];
   }
 }
