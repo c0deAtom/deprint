@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { prisma } from "@/lib/db";
+import Image from "next/image";
 
 interface Product {
   id: string;
@@ -27,7 +28,10 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen flex flex-col">
-     
+      <header className="w-full py-6 border-b flex justify-between items-center px-4 md:px-8">
+        <Link href="/" className="text-xl font-bold tracking-tight">deprint2</Link>
+      
+      </header>
       <main className="flex-1 flex flex-col items-center justify-center py-12 px-4 md:px-8">
         <h1 className="text-3xl md:text-5xl font-bold mb-8 text-center">Minimal Ecommerce Store</h1>
         <p className="text-muted-foreground text-center mb-12 max-w-2xl">
@@ -40,7 +44,7 @@ export default async function Home() {
               {featuredProducts.map((product) => (
                 <Card key={product.id} className="flex flex-col items-center p-6">
                   {product.imageUrl ? (
-                    <img src={product.imageUrl} alt={product.name} className="w-32 h-32 object-contain mb-4" />
+                    <Image src={product.imageUrl} alt={product.name} width={128} height={128} className="w-32 h-32 object-contain mb-4" unoptimized />
                   ) : (
                     <div className="w-32 h-32 bg-gray-200 flex items-center justify-center mb-4 text-gray-500">No Image</div>
                   )}

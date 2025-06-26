@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { prisma } from "@/lib/db";
+import Image from "next/image";
 
 interface Product {
   id: string;
@@ -47,10 +48,13 @@ export default async function ProductsPage() {
                 <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                   <div className="aspect-square bg-gray-100 flex items-center justify-center">
                     {product.imageUrl ? (
-                      <img 
-                        src={product.imageUrl} 
-                        alt={product.name} 
+                      <Image
+                        src={product.imageUrl}
+                        alt={product.name}
+                        width={256}
+                        height={256}
                         className="w-full h-full object-cover"
+                        unoptimized
                       />
                     ) : (
                       <div className="text-gray-400 text-sm">No Image</div>

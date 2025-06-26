@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -95,7 +96,7 @@ export default function AdminPage() {
             <div className="font-semibold">{product.name}</div>
             <div className="text-sm text-muted-foreground">{product.description}</div>
             <div className="text-sm">${product.price.toFixed(2)}</div>
-            {product.imageUrl && <img src={product.imageUrl} alt={product.name} className="w-24 h-24 object-contain mt-2" />}
+            {product.imageUrl && <Image src={product.imageUrl} alt={product.name} width={96} height={96} className="object-contain mt-2" />}
           </Card>
         ))}
       </div>
