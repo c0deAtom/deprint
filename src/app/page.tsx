@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { prisma } from "@/lib/db";
 import Image from "next/image";
+import CartItem from "@/components/CartItem";
 
 interface Product {
   id: string;
@@ -50,7 +51,7 @@ export default async function Home() {
                     <div className="text-sm text-muted-foreground mb-2 text-center">{product.description}</div>
                   )}
                   <div className="text-muted-foreground mb-4">${product.price.toFixed(2)}</div>
-                  <Button className="w-full">Add to Cart</Button>
+                  <CartItem product={product} />
                 </Card>
               ))}
             </div>

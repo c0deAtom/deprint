@@ -2,10 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ReactNode } from "react";
-import Link from "next/link";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
-import { Button } from "@/components/ui/button";
+import Navbar from "@/components/Navbar";
+import Providers from "./providers";
+import CartMergeOnSignIn from "@/components/CartMergeOnSignIn";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,37 +26,16 @@ export default async function RootLayout({
 }: {
   children: ReactNode;
 }) {
-  const session = await getServerSession(authOptions);
-
   return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <header className="w-full py-6 border-b flex justify-between items-center px-4 md:px-8">
-          <Link href="/" className="text-xl font-bold tracking-tight">deprint2</Link>
-          <nav className="flex gap-6 text-sm items-center">
-            <Link href="/products" className="hover:underline">Products</Link>
-            <Link href="/admin" className="hover:underline">Admin</Link>
-            <Link href="/contact" className="hover:underline">Contact</Link>
-            <Link href="/policy" className="hover:underline">Policy</Link>
-            <Link href="/terms" className="hover:underline">Terms</Link>
-            {session?.user ? (
-              <div className="flex items-center gap-2 ml-4">
-                <span className="font-medium text-sm">{session.user.name || session.user.email}</span>
-                {/* Profile dropdown or avatar can go here */}
-                <form action="/api/auth/signout" method="post">
-                  <Button type="submit" variant="outline" size="sm">Sign Out</Button>
-                </form>
-              </div>
-            ) : (
-              <Link href="/signin">
-                <Button variant="outline" size="sm">Sign In</Button>
-              </Link>
-            )}
-          </nav>
-        </header>
-        {children}
+        <Providers>
+          <CartMergeOnSignIn />
+          <Navbar />
+          {children}
+        </Providers>
       </body>
     </html>
   );
