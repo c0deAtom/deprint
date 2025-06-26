@@ -26,17 +26,7 @@ export default async function ProductsPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="w-full py-6 border-b flex justify-between items-center px-4 md:px-8">
-        <Link href="/" className="text-xl font-bold tracking-tight">deprint2</Link>
-        <nav className="flex gap-6 text-sm">
-          <Link href="/products" className="hover:underline font-semibold">Products</Link>
-          <Link href="/admin" className="hover:underline">Admin</Link>
-          <Link href="/contact" className="hover:underline">Contact</Link>
-          <Link href="/policy" className="hover:underline">Policy</Link>
-          <Link href="/terms" className="hover:underline">Terms</Link>
-        </nav>
-      </header>
-      
+     
       <main className="flex-1 py-12 px-4 md:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">
