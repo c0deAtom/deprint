@@ -25,7 +25,7 @@ async function getProducts(): Promise<Product[]> {
 
 export default async function Home() {
   const products = await getProducts();
-  const featuredProducts = products.slice(0, 3); // Show only first 3 products on home
+  const featuredProducts = products; // Show all products on home
 
   return (
     <div className="min-h-screen flex flex-col">
