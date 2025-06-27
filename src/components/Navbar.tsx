@@ -2,7 +2,7 @@
 import { useSession, signIn, signOut } from "next-auth/react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, Menu } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function Navbar() {
@@ -40,8 +40,19 @@ export default function Navbar() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
 
+  const handleSidebarToggle = () => {
+    window.dispatchEvent(new CustomEvent("sidebar-toggle"));
+  };
+
   return (
     <header className="w-full py-6 border-b flex justify-between items-center px-4 md:px-8">
+      <button
+        className="md:hidden mr-4 p-2 rounded hover:bg-gray-100 focus:outline-none"
+        aria-label="Open sidebar"
+        onClick={handleSidebarToggle}
+      >
+        <Menu className="w-6 h-6" />
+      </button>
       <Link href="/" className="text-xl font-bold tracking-tight">deprint2</Link>
       <nav className="flex gap-6 text-sm items-center">
        

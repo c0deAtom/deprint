@@ -71,12 +71,12 @@ export default function ProductCard({ product, className }: ProductCardProps) {
         ) : (
           <div className="w-32 h-32 bg-gray-200 flex items-center justify-center mb-4 text-gray-500">No Image</div>
         )}
-        <div className="w-full flex flex-col items-center flex-1">
-          <h2 className="text-lg font-bold text-center mb-1 w-full truncate">{product.name}</h2>
+        <div className="w-full flex flex-col items-start flex-1">
+          <h2 className="text-2xl font-bold text-left mb-1 w-full">{product.name}</h2>
           {product.description && (
-            <div className="text-xs text-muted-foreground mb-2 text-center w-full line-clamp-2">{product.description}</div>
+            <div className="text-s text-muted-foreground mb-2 text-left w-full line-clamp-4 break-words">{product.description}</div>
           )}
-          <div className="text-base font-semibold text-green-700 mb-4 w-full text-center">${product.price.toFixed(2)}</div>
+          <div className="text-3xl font-bold text-green-700 mb-4 w-full text-left">₹{product.price.toFixed(2)}</div>
         </div>
       </Link>
       <div className="flex gap-2 w-full mt-auto">
