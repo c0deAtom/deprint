@@ -1,11 +1,9 @@
 export const revalidate = 0;
 
 import Link from "next/link";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { prisma } from "@/lib/db";
-import Image from "next/image";
-import CartItem from "@/components/CartItem";
+
 import { JsonValue } from "@prisma/client/runtime/library";
 import ProductCard from "@/components/ProductCard";
 
@@ -44,20 +42,7 @@ export default async function Home() {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 w-full max-w-5xl mb-12">
               {featuredProducts.map((product) => (
-                <ProductCard key={product.id} product={product}>
-                  <div className="relative w-full aspect-square mb-4 flex items-center justify-center">
-                    <Image
-                      src={product.imageUrls as string}
-                      alt={product.name}
-                      fill
-                      sizes="100vw"
-                      className="object-cover rounded"
-                      unoptimized
-                      priority
-                    />
-                  </div>
-                  <div className="flex-1"><CartItem product={product} /></div>
-                </ProductCard>
+                <ProductCard key={product.id} product={product} />
               ))}
             </div>
             
