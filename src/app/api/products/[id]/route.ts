@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest) {
   try {
-    const id = params.id;
+    const id = req.nextUrl.pathname.split("/").pop();
     const data = await req.json();
     const updated = await prisma.product.update({
       where: { id },
@@ -15,17 +15,17 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       },
     });
     return NextResponse.json(updated);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to update product' }, { status: 500 });
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest) {
   try {
-    const id = params.id;
+    const id = req.nextUrl.pathname.split("/").pop();
     const deleted = await prisma.product.delete({ where: { id } });
     return NextResponse.json(deleted);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to delete product' }, { status: 500 });
   }
 } 

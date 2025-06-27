@@ -25,7 +25,6 @@ export default function AdminPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [form, setForm] = useState({ name: "", description: "", price: "", imageUrl: "" });
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [editForm, setEditForm] = useState({ name: "", description: "", price: "", imageUrl: "" });
   const [deleteProduct, setDeleteProduct] = useState<Product | null>(null);
@@ -43,7 +42,7 @@ export default function AdminPage() {
       } else {
         toast.error("Failed to fetch products");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error fetching products");
     }
   };
@@ -55,7 +54,6 @@ export default function AdminPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setMessage("");
     try {
       const res = await fetch("/api/products", {
         method: "POST",
@@ -68,10 +66,10 @@ export default function AdminPage() {
         setForm({ name: "", description: "", price: "", imageUrl: "" });
         toast.success("Product added successfully!");
       } else {
-        const error = await res.json();
-        toast.error(error.error || "Failed to add product");
+        const err = await res.json();
+        toast.error(err.error || "Failed to add product");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error adding product");
     }
     setLoading(false);
@@ -107,10 +105,10 @@ export default function AdminPage() {
         setEditProduct(null);
         toast.success("Product updated!");
       } else {
-        const error = await res.json();
-        toast.error(error.error || "Failed to update product");
+        const err = await res.json();
+        toast.error(err.error || "Failed to update product");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error updating product");
     }
     setLoading(false);
@@ -128,7 +126,7 @@ export default function AdminPage() {
       } else {
         toast.error("Failed to delete product");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error deleting product");
     }
     setLoading(false);

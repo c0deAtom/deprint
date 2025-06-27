@@ -5,11 +5,9 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import CartItemClientWrapper from '@/components/CartItemClientWrapper';
 
-interface ProductPageProps {
-  params: { id: string };
-}
-
-export default async function ProductPage({ params }: ProductPageProps) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export default async function Page(props: any) {
+  const { params } = props;
   const product = await prisma.product.findUnique({ where: { id: params.id } });
   if (!product) return notFound();
 
