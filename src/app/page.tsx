@@ -40,17 +40,19 @@ export default async function Home() {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 w-full max-w-5xl mb-12">
               {featuredProducts.map((product) => (
-                <Card key={product.id} className="flex flex-col items-center p-6">
-                  {product.imageUrl ? (
-                    <Image src={product.imageUrl} alt={product.name} width={128} height={128} className="w-32 h-32 object-contain mb-4" unoptimized />
-                  ) : (
-                    <div className="w-32 h-32 bg-gray-200 flex items-center justify-center mb-4 text-gray-500">No Image</div>
-                  )}
-                  <div className="font-semibold mb-2">{product.name}</div>
-                  {product.description && (
-                    <div className="text-sm text-muted-foreground mb-2 text-center">{product.description}</div>
-                  )}
-                  <div className="text-muted-foreground mb-4">${product.price.toFixed(2)}</div>
+                <Card key={product.id} className="flex flex-col items-center p-6 cursor-pointer hover:shadow-lg transition-shadow">
+                  <Link href={`/products/${product.id}`} className="w-full flex flex-col items-center hover:no-underline">
+                    {product.imageUrl && product.imageUrl.trim() !== "" ? (
+                      <Image src={product.imageUrl} alt={product.name} width={128} height={128} className="w-32 h-32 object-contain mb-4" unoptimized />
+                    ) : (
+                      <div className="w-32 h-32 bg-gray-200 flex items-center justify-center mb-4 text-gray-500">No Image</div>
+                    )}
+                    <div className="font-semibold mb-2">{product.name}</div>
+                    {product.description && (
+                      <div className="text-sm text-muted-foreground mb-2 text-center">{product.description}</div>
+                    )}
+                    <div className="text-muted-foreground mb-4">${product.price.toFixed(2)}</div>
+                  </Link>
                   <CartItem product={product} />
                 </Card>
               ))}

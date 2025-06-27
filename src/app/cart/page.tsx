@@ -70,11 +70,13 @@ export default function CartPage() {
           }))
         );
       setCart(allItems);
+      window.dispatchEvent(new Event("cart-updated"));
     } else {
       const updated = cart.filter(p => p.id !== id);
       setCart(updated);
       localStorage.setItem("cart", JSON.stringify(updated));
       window.dispatchEvent(new Event("storage"));
+      window.dispatchEvent(new Event("cart-updated"));
     }
   };
 
