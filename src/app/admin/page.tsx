@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import ProductImageCarousel from "@/components/ProductImageCarousel";
-import { Package, ShoppingCart, DollarSign, AlertCircle } from "lucide-react";
+import { Package, ShoppingCart, DollarSign, AlertCircle, LogOut, User } from "lucide-react";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
 
 interface Product {
   id: string;
@@ -62,6 +63,7 @@ const getStatusColor = (status: string) => {
 };
 
 export default function AdminPage() {
+  const { user, loading, logout: useAdminAuthLogout, isAuthenticated } = useAdminAuth();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -72,26 +74,44 @@ export default function AdminPage() {
     pendingOrders: 0
   });
   const [form, setForm] = useState({ name: "", description: "", price: "", imageUrls: "" });
-  const [loading, setLoading] = useState(false);
+  const [loadingData, setLoadingData] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [editForm, setEditForm] = useState({ name: "", description: "", price: "", imageUrls: "" });
   const [deleteProduct, setDeleteProduct] = useState<Product | null>(null);
 
+  // Redirect if not authenticated
+  useEffect(() => {
+    console.log("Admin page: loading =", loading, "isAuthenticated =", isAuthenticated);
+    if (!loading && !isAuthenticated) {
+      console.log("Admin page: Redirecting to login");
+      window.location.href = "/admin/login";
+    }
+  }, [loading, isAuthenticated]);
+
   const fetchData = useCallback(async () => {
+    if (!isAuthenticated) return;
+    
     await Promise.all([
       fetchProducts(),
       fetchOrders(),
       fetchStats()
     ]);
-  }, []);
+  }, [isAuthenticated]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (isAuthenticated) {
+      fetchData();
+    }
+  }, [fetchData, isAuthenticated]);
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch("/api/products");
+      const token = localStorage.getItem("adminToken");
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      const res = await fetch("/api/products", { headers });
       if (res.ok) {
         const data = await res.json();
         setProducts(data);
@@ -105,7 +125,12 @@ export default function AdminPage() {
 
   const fetchOrders = async () => {
     try {
-      const res = await fetch("/api/admin/orders");
+      const token = localStorage.getItem("adminToken");
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      const res = await fetch("/api/admin/orders", { headers });
       if (res.ok) {
         const data = await res.json();
         setOrders(data);
@@ -119,7 +144,12 @@ export default function AdminPage() {
 
   const fetchStats = async () => {
     try {
-      const res = await fetch("/api/admin/stats");
+      const token = localStorage.getItem("adminToken");
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      const res = await fetch("/api/admin/stats", { headers });
       if (res.ok) {
         const data = await res.json();
         setStats(data);
@@ -135,12 +165,17 @@ export default function AdminPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setLoadingData(true);
     try {
       const imageUrlsArr = form.imageUrls.split(',').map(url => url.trim()).filter(Boolean);
+      const token = localStorage.getItem("adminToken");
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
       const res = await fetch("/api/products", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ ...form, price: parseFloat(form.price), imageUrls: imageUrlsArr }),
       });
       if (res.ok) {
@@ -156,7 +191,7 @@ export default function AdminPage() {
     } catch {
       toast.error("Error adding product");
     }
-    setLoading(false);
+    setLoadingData(false);
   };
 
   const openEdit = (product: Product) => {
@@ -176,12 +211,17 @@ export default function AdminPage() {
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editProduct) return;
-    setLoading(true);
+    setLoadingData(true);
     try {
       const imageUrlsArr = editForm.imageUrls.split(',').map(url => url.trim()).filter(Boolean);
+      const token = localStorage.getItem("adminToken");
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
       const res = await fetch(`/api/products/${editProduct.id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ ...editForm, price: parseFloat(editForm.price), imageUrls: imageUrlsArr }),
       });
       if (res.ok) {
@@ -196,14 +236,22 @@ export default function AdminPage() {
     } catch {
       toast.error("Error updating product");
     }
-    setLoading(false);
+    setLoadingData(false);
   };
 
   const handleDelete = async () => {
     if (!deleteProduct) return;
-    setLoading(true);
+    setLoadingData(true);
     try {
-      const res = await fetch(`/api/products/${deleteProduct.id}`, { method: "DELETE" });
+      const token = localStorage.getItem("adminToken");
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      const res = await fetch(`/api/products/${deleteProduct.id}`, {
+        method: "DELETE",
+        headers
+      });
       if (res.ok) {
         setProducts(products.filter(p => p.id !== deleteProduct.id));
         setDeleteProduct(null);
@@ -215,19 +263,24 @@ export default function AdminPage() {
     } catch {
       toast.error("Error deleting product");
     }
-    setLoading(false);
+    setLoadingData(false);
   };
 
   const updateOrderStatus = async (orderId: string, status: string) => {
     try {
+      const token = localStorage.getItem("adminToken");
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
       const res = await fetch(`/api/admin/orders/${orderId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ status }),
       });
       if (res.ok) {
         setOrders(orders.map(order => 
-          order.id === orderId ? { ...order, status: status as 'PENDING' | 'CONFIRMED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' } : order
+          order.id === orderId ? { ...order, status: status as Order['status'] } : order
         ));
         toast.success("Order status updated!");
         fetchStats();
@@ -239,14 +292,41 @@ export default function AdminPage() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null; // Will redirect to login
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto py-8 px-4">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-          <p className="text-gray-600 mt-2">Manage your products, orders, and business</p>
+      {/* Admin Header */}
+      <header className="bg-white border-b px-6 py-4">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <User className="w-4 h-4" />
+              <span>{user?.email}</span>
+            </div>
+            <Button variant="outline" size="sm" onClick={useAdminAuthLogout} className="flex items-center gap-2">
+              <LogOut className="w-4 h-4" />
+              Logout
+            </Button>
+          </div>
         </div>
+      </header>
 
+      <div className="p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
@@ -256,7 +336,7 @@ export default function AdminPage() {
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Products</CardTitle>
@@ -281,12 +361,12 @@ export default function AdminPage() {
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">${stats.totalRevenue.toFixed(2)}</div>
+                  <div className="text-2xl font-bold">₹{stats.totalRevenue.toFixed(2)}</div>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Orders to Ship</CardTitle>
+                  <CardTitle className="text-sm font-medium">Pending Orders</CardTitle>
                   <AlertCircle className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -294,37 +374,6 @@ export default function AdminPage() {
                 </CardContent>
               </Card>
             </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Orders</CardTitle>
-                <CardDescription>Latest confirmed orders that need attention</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {orders.slice(0, 5).map((order) => (
-                    <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <p className="font-medium">Order #{order.id.slice(-8)}</p>
-                        <p className="text-sm text-gray-600">{order.user.email}</p>
-                        <p className="text-sm text-gray-600">
-                          {new Date(order.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium">${order.total.toFixed(2)}</p>
-                        <Badge className={getStatusColor(order.status)}>
-                          {order.status}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                  {orders.length === 0 && (
-                    <p className="text-center text-gray-500 py-8">No orders yet</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
           </TabsContent>
 
           <TabsContent value="products" className="space-y-6">
@@ -334,44 +383,90 @@ export default function AdminPage() {
                 <CardDescription>Create a new product for your store</CardDescription>
               </CardHeader>
               <CardContent>
-                <form className="grid grid-cols-1 md:grid-cols-2 gap-4" onSubmit={handleSubmit}>
-                  <Input name="name" placeholder="Product Name" value={form.name} onChange={handleChange} required />
-                  <Input name="price" placeholder="Price" type="number" step="0.01" value={form.price} onChange={handleChange} required />
-                  <Input name="description" placeholder="Description" value={form.description} onChange={handleChange} className="md:col-span-2" />
-                  <Input name="imageUrls" placeholder="Image URLs (comma separated)" value={form.imageUrls} onChange={handleChange} className="md:col-span-2" />
-                  <Button type="submit" disabled={loading} className="md:col-span-2">
-                    {loading ? "Adding..." : "Add Product"}
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium">Name</label>
+                      <Input
+                        name="name"
+                        value={form.name}
+                        onChange={handleChange}
+                        placeholder="Product name"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Price</label>
+                      <Input
+                        name="price"
+                        type="number"
+                        step="0.01"
+                        value={form.price}
+                        onChange={handleChange}
+                        placeholder="0.00"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Description</label>
+                    <Input
+                      name="description"
+                      value={form.description}
+                      onChange={handleChange}
+                      placeholder="Product description"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Image URLs (comma-separated)</label>
+                    <Input
+                      name="imageUrls"
+                      value={form.imageUrls}
+                      onChange={handleChange}
+                      placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg"
+                    />
+                  </div>
+                  <Button type="submit" disabled={loadingData}>
+                    {loadingData ? "Adding..." : "Add Product"}
                   </Button>
                 </form>
               </CardContent>
             </Card>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {products.map(product => (
-                <Card key={product.id} className="overflow-hidden">
-                  <div className="aspect-square relative">
-                    {Array.isArray(product.imageUrls) && product.imageUrls.length > 0 ? (
-                      <ProductImageCarousel images={product.imageUrls} alt={product.name} />
-                    ) : (
-                      <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400">
-                        No Image
-                      </div>
-                    )}
-                  </div>
-                  <CardContent className="p-4">
-                    <h3 className="font-semibold text-lg mb-2">{product.name}</h3>
-                    {product.description && (
-                      <p className="text-sm text-gray-600 mb-2 line-clamp-2">{product.description}</p>
-                    )}
-                    <p className="text-lg font-bold text-green-600 mb-3">${product.price.toFixed(2)}</p>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => openEdit(product)} className="flex-1">
-                        Edit
-                      </Button>
-                      <Button size="sm" variant="destructive" onClick={() => setDeleteProduct(product)} className="flex-1">
-                        Delete
-                      </Button>
+              {products.map((product) => (
+                <Card key={product.id}>
+                  <CardHeader>
+                    <div className="aspect-square relative mb-4">
+                      {product.imageUrls && product.imageUrls.length > 0 ? (
+                        <ProductImageCarousel images={product.imageUrls} alt={product.name} />
+                      ) : (
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500">
+                          No Image
+                        </div>
+                      )}
                     </div>
+                    <CardTitle className="text-lg">{product.name}</CardTitle>
+                    <CardDescription className="line-clamp-2">{product.description}</CardDescription>
+                    <div className="text-lg font-bold text-green-600">₹{product.price.toFixed(2)}</div>
+                  </CardHeader>
+                  <CardContent className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openEdit(product)}
+                      className="flex-1"
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setDeleteProduct(product)}
+                      className="flex-1"
+                    >
+                      Delete
+                    </Button>
                   </CardContent>
                 </Card>
               ))}
@@ -379,49 +474,34 @@ export default function AdminPage() {
           </TabsContent>
 
           <TabsContent value="orders" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Order Management</CardTitle>
-                <CardDescription>View and manage all confirmed customer orders</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {orders.map((order) => (
-                    <Card key={order.id} className="p-6">
-                      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-4 mb-2">
-                            <h3 className="font-semibold">Order #{order.id.slice(-8)}</h3>
-                            <Badge className={getStatusColor(order.status)}>
-                              {order.status}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-gray-600 mb-1">
-                            Customer: {order.user.name || order.user.email}
-                          </p>
-                          <p className="text-sm text-gray-600 mb-2">
-                            Date: {new Date(order.createdAt).toLocaleDateString()}
-                          </p>
-                          <div className="space-y-1">
-                            {order.items.map((item) => (
-                              <div key={item.id} className="text-sm">
-                                {item.product.name} x {item.quantity} - ${item.price.toFixed(2)}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="flex flex-col items-end gap-3">
-                          <div className="text-right">
-                            <p className="text-lg font-bold">${order.total.toFixed(2)}</p>
-                          </div>
-                          <Select 
-                            value={order.status} 
-                            onValueChange={(value: string) => updateOrderStatus(order.id, value)}
-                          >
-                            <SelectTrigger className="w-32">
+            <div className="grid gap-6">
+              {orders.map((order) => (
+                <Card key={order.id}>
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle className="text-lg">Order #{order.id.slice(-8)}</CardTitle>
+                        <CardDescription>
+                          {order.user.name || order.user.email} • {new Date(order.createdAt).toLocaleDateString()}
+                        </CardDescription>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge className={getStatusColor(order.status)}>{order.status}</Badge>
+                        <div className="text-lg font-bold">₹{order.total.toFixed(2)}</div>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium">Status</label>
+                          <Select value={order.status} onValueChange={(value) => updateOrderStatus(order.id, value)}>
+                            <SelectTrigger>
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
+                              <SelectItem value="PENDING">Pending</SelectItem>
                               <SelectItem value="CONFIRMED">Confirmed</SelectItem>
                               <SelectItem value="SHIPPED">Shipped</SelectItem>
                               <SelectItem value="DELIVERED">Delivered</SelectItem>
@@ -430,86 +510,112 @@ export default function AdminPage() {
                           </Select>
                         </div>
                       </div>
-                    </Card>
-                  ))}
-                  {orders.length === 0 && (
-                    <p className="text-center text-gray-500 py-8">No orders yet</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                      <div>
+                        <h4 className="font-medium mb-2">Items</h4>
+                        <div className="space-y-2">
+                          {order.items.map((item) => (
+                            <div key={item.id} className="flex justify-between text-sm">
+                              <span>{item.product.name} × {item.quantity}</span>
+                              <span>₹{item.price.toFixed(2)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>Analytics</CardTitle>
-                <CardDescription>Business insights and performance metrics</CardDescription>
+                <CardDescription>Store performance and insights</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <h3 className="font-semibold">Top Products</h3>
-                    <div className="space-y-2">
-                      {products.slice(0, 5).map((product) => (
-                        <div key={product.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                          <span className="text-sm">{product.name}</span>
-                          <span className="text-sm font-medium">${product.price.toFixed(2)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    <h3 className="font-semibold">Order Status Distribution</h3>
-                    <div className="space-y-2">
-                      {['CONFIRMED', 'SHIPPED', 'DELIVERED', 'CANCELLED'].map((status) => {
-                        const count = orders.filter(order => order.status === status).length;
-                        return (
-                          <div key={status} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                            <span className="text-sm">{status}</span>
-                            <Badge variant="secondary">{count}</Badge>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
+                <p className="text-muted-foreground">Analytics dashboard coming soon...</p>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
-
-        <Dialog open={!!editProduct} onOpenChange={v => !v && setEditProduct(null)}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Edit Product</DialogTitle>
-            </DialogHeader>
-            <form className="flex flex-col gap-4" onSubmit={handleEditSubmit}>
-              <Input name="name" placeholder="Product Name" value={editForm.name} onChange={handleEditChange} required />
-              <Input name="description" placeholder="Description" value={editForm.description} onChange={handleEditChange} />
-              <Input name="price" placeholder="Price" type="number" step="0.01" value={editForm.price} onChange={handleEditChange} required />
-              <Input name="imageUrls" placeholder="Image URLs (comma separated)" value={editForm.imageUrls} onChange={handleEditChange} />
-              <DialogFooter>
-                <Button type="submit" disabled={loading}>{loading ? "Saving..." : "Save Changes"}</Button>
-                <Button type="button" variant="outline" onClick={() => setEditProduct(null)}>Cancel</Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-
-        <Dialog open={!!deleteProduct} onOpenChange={v => !v && setDeleteProduct(null)}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Delete Product</DialogTitle>
-            </DialogHeader>
-            <p>Are you sure you want to delete <b>{deleteProduct?.name}</b>?</p>
-            <DialogFooter>
-              <Button variant="destructive" onClick={handleDelete} disabled={loading}>Delete</Button>
-              <Button variant="outline" onClick={() => setDeleteProduct(null)}>Cancel</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
+
+      {/* Edit Product Dialog */}
+      <Dialog open={!!editProduct} onOpenChange={() => setEditProduct(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Product</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEditSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Name</label>
+                <Input
+                  name="name"
+                  value={editForm.name}
+                  onChange={handleEditChange}
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Price</label>
+                <Input
+                  name="price"
+                  type="number"
+                  step="0.01"
+                  value={editForm.price}
+                  onChange={handleEditChange}
+                  required
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Description</label>
+              <Input
+                name="description"
+                value={editForm.description}
+                onChange={handleEditChange}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Image URLs (comma-separated)</label>
+              <Input
+                name="imageUrls"
+                value={editForm.imageUrls}
+                onChange={handleEditChange}
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditProduct(null)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={loadingData}>
+                {loadingData ? "Updating..." : "Update Product"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deleteProduct} onOpenChange={() => setDeleteProduct(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Product</DialogTitle>
+          </DialogHeader>
+          <p>Are you sure you want to delete &quot;{deleteProduct?.name}&quot;? This action cannot be undone.</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteProduct(null)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={loadingData}>
+              {loadingData ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 } 

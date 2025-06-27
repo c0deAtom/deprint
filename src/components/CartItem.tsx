@@ -132,7 +132,7 @@ export default function CartItem({ product }: { product: Product }) {
 
   if (inCart) {
     return (
-      <Button size="lg" variant="destructive" onClick={handleRemoveFromCart} disabled={loading}>
+      <Button size="lg" variant="destructive" className="w-36" onClick={handleRemoveFromCart} disabled={loading}>
         {loading ? "Removing..." : "Remove from Cart"}
       </Button>
     );

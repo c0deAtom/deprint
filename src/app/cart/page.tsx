@@ -132,14 +132,55 @@ export default function CartPage() {
         </div>
       ) : (
         <div className="w-full max-w-4xl space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6">
             {cart.map(product => (
-              <Card key={product.id} className="p-4 flex flex-col gap-2">
-                <div className="font-semibold">{product.name}</div>
-                <div className="text-sm">${product.price.toFixed(2)}</div>
-                {product.quantity && <div className="text-xs text-muted-foreground">Qty: {product.quantity}</div>}
-                {Array.isArray(product.imageUrls) && product.imageUrls.length > 0 && <Image src={product.imageUrls[0] as string} alt={product.name} width={96} height={96} className="object-contain mt-2" />}
-                <Button variant="destructive" size="sm" onClick={() => removeFromCart(product.id)}>Remove</Button>
+              <Card key={product.id} className="p-4">
+                <div className="flex gap-4">
+                  {/* Product Image - Left Side */}
+                  <div className="flex-shrink-0">
+                    {Array.isArray(product.imageUrls) && product.imageUrls.length > 0 ? (
+                      <Image 
+                        src={product.imageUrls[0] as string} 
+                        alt={product.name} 
+                        width={120} 
+                        height={120} 
+                        className="object-cover rounded-lg"
+                      />
+                    ) : (
+                      <div className="w-[120px] h-[120px] bg-gray-200 rounded-lg flex items-center justify-center text-gray-500 text-sm">
+                        No Image
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Product Details - Right Side */}
+                  <div className="flex-1 flex flex-col justify-between">
+                    <div>
+                      <h3 className="font-semibold text-lg mb-2">{product.name}</h3>
+                      <div className="text-lg font-medium text-green-600 mb-2">
+                        ₹{product.price.toFixed(2)}
+                      </div>
+                      {product.quantity && (
+                        <div className="text-sm text-muted-foreground mb-2">
+                          Quantity: {product.quantity}
+                        </div>
+                      )}
+                      <div className="text-sm font-medium">
+                        Total: ₹{((product.price * (product.quantity || 1)).toFixed(2))}
+                      </div>
+                    </div>
+                    
+                    <div className="mt-4">
+                      <Button 
+                        variant="destructive" 
+                        size="sm" 
+                        onClick={() => removeFromCart(product.id)}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               </Card>
             ))}
           </div>
@@ -147,7 +188,7 @@ export default function CartPage() {
           <Card className="p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold">Order Summary</h2>
-              <div className="text-2xl font-bold">${total.toFixed(2)}</div>
+              <div className="text-2xl font-bold">₹{total.toFixed(2)}</div>
             </div>
             <div className="flex gap-3">
               <Button 

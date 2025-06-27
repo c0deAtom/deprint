@@ -92,3 +92,11 @@ enum OrderStatus {
   DELIVERED
   CANCELLED
 }
+
+model Admin {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+}

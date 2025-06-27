@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ReactNode } from "react";
-import Navbar from "@/components/Navbar";
+import ConditionalNavbar from "@/components/ConditionalNavbar";
 import Providers from "./providers";
 import CartMergeOnSignIn from "@/components/CartMergeOnSignIn";
 
@@ -33,7 +33,7 @@ export default async function RootLayout({
       >
         <Providers>
           <CartMergeOnSignIn />
-          <Navbar />
+          <ConditionalNavbar />
           {children}
         </Providers>
       </body>

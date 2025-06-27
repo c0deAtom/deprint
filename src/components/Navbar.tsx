@@ -2,8 +2,15 @@
 import { useSession, signIn, signOut } from "next-auth/react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Menu } from "lucide-react";
+import { ShoppingCart, Menu, ChevronDown, User, Package, LogOut } from "lucide-react";
 import { useEffect, useState } from "react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function Navbar() {
   const { data: session, status } = useSession();
@@ -44,6 +51,17 @@ export default function Navbar() {
     window.dispatchEvent(new CustomEvent("sidebar-toggle"));
   };
 
+  // Get user's first name
+  const getFirstName = (name: string | null | undefined, email: string | null | undefined) => {
+    if (name) {
+      return name.split(' ')[0];
+    }
+    if (email) {
+      return email.split('@')[0];
+    }
+    return 'User';
+  };
+
   return (
     <header className="w-full py-6 border-b flex justify-between items-center px-4 md:px-8">
       <button
@@ -56,7 +74,7 @@ export default function Navbar() {
       <Link href="/" className="text-xl font-bold tracking-tight">deprint2</Link>
       <nav className="flex gap-6 text-sm items-center">
        
-        <Link href="/admin" className="hover:underline">Admin</Link>
+      
         <Link href="/contact" className="hover:underline">Contact</Link>
         <Link href="/policy" className="hover:underline">Policy</Link>
         <Link href="/terms" className="hover:underline">Terms</Link>
@@ -67,10 +85,38 @@ export default function Navbar() {
           )}
         </Link>
         {status === "loading" ? null : session?.user ? (
-          <div className="flex items-center gap-2 ml-4">
-            <span className="font-medium text-sm">{session.user.name || session.user.email}</span>
-            <Button variant="outline" size="sm" onClick={() => signOut()}>Sign Out</Button>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="flex items-center gap-2 hover:bg-gray-100">
+                <span className="font-medium text-sm">
+                  {getFirstName(session.user.name, session.user.email)}
+                </span>
+                <ChevronDown className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem asChild>
+                <Link href="/profile" className="flex items-center gap-2">
+                  <User className="w-4 h-4" />
+                  Profile
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/orders" className="flex items-center gap-2">
+                  <Package className="w-4 h-4" />
+                  My Orders
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={() => signOut()}
+                className="flex items-center gap-2 text-red-600 focus:text-red-600"
+              >
+                <LogOut className="w-4 h-4" />
+                Sign Out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         ) : (
           <Button variant="outline" size="sm" onClick={() => signIn()}>Sign In</Button>
         )}

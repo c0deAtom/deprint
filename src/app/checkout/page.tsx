@@ -28,7 +28,7 @@ interface CheckoutForm {
 }
 
 export default function CheckoutPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const [cart, setCart] = useState<CartProduct[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,8 +43,14 @@ export default function CheckoutPage() {
   });
 
   useEffect(() => {
-    if (!session?.user) {
+    // Only redirect if session is definitely not available (not loading)
+    if (status === "unauthenticated") {
       router.push("/signin?callbackUrl=/checkout");
+      return;
+    }
+
+    // Don't proceed if session is still loading
+    if (status === "loading") {
       return;
     }
 
@@ -81,7 +87,7 @@ export default function CheckoutPage() {
     };
 
     fetchCart();
-  }, [session, router]);
+  }, [session, status, router]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -138,7 +144,7 @@ export default function CheckoutPage() {
   const tax = total * 0.08; // 8% tax
   const grandTotal = total + shipping + tax;
 
-  if (loading) {
+  if (loading || status === "loading") {
     return (
       <main className="flex flex-col items-center py-12 px-4 min-h-screen">
         <div className="text-center">
@@ -281,7 +287,7 @@ export default function CheckoutPage() {
                       </div>
                       <div className="text-right">
                         <p className="font-medium">
-                          ${((item.price * (item.quantity || 1)).toFixed(2))}
+                          ₹{((item.price * (item.quantity || 1)).toFixed(2))}
                         </p>
                       </div>
                     </div>
@@ -298,19 +304,19 @@ export default function CheckoutPage() {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>Subtotal</span>
-                    <span>${total.toFixed(2)}</span>
+                    <span>₹{total.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Shipping</span>
-                    <span>${shipping.toFixed(2)}</span>
+                    <span>₹{shipping.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Tax</span>
-                    <span>${tax.toFixed(2)}</span>
+                    <span>₹{tax.toFixed(2)}</span>
                   </div>
                   <div className="border-t pt-2 flex justify-between font-bold text-lg">
                     <span>Total</span>
-                    <span>${grandTotal.toFixed(2)}</span>
+                    <span>₹{grandTotal.toFixed(2)}</span>
                   </div>
                 </div>
                 
@@ -320,7 +326,7 @@ export default function CheckoutPage() {
                   className="w-full mt-6"
                   size="lg"
                 >
-                  {checkoutLoading ? "Processing..." : `Place Order - $${grandTotal.toFixed(2)}`}
+                  {checkoutLoading ? "Processing..." : `Place Order - ₹${grandTotal.toFixed(2)}`}
                 </Button>
               </CardContent>
             </Card>
