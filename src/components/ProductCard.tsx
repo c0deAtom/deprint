@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { JsonValue } from "@prisma/client/runtime/library";
 import BuyNowButton from "@/components/BuyNowButton";
-import CartItem from "@/components/CartItem";
+import CartItemBackend from "@/components/CartItemBackend";
 
 interface ProductCardProps {
   product: {
@@ -20,31 +20,23 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, className }: ProductCardProps) {
-  const images = Array.isArray(product.imageUrls) ? product.imageUrls : [];
   const [index, setIndex] = useState(0);
+  const images = Array.isArray(product.imageUrls) ? product.imageUrls : [];
   const hasMultiple = images.length > 1;
-  const prev = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setIndex(i => (i === 0 ? images.length - 1 : i - 1));
-  };
-  const next = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setIndex(i => (i === images.length - 1 ? 0 : i + 1));
-  };
+
+  const next = () => setIndex((i) => (i + 1) % images.length);
+  const prev = () => setIndex((i) => (i - 1 + images.length) % images.length);
 
   return (
-    <Card className={`flex flex-col items-center p-2 cursor-pointer hover:shadow-lg transition-shadow ${className || ""}`}>
-      <Link href={`/products/${product.id}`} className="w-full flex flex-col items-center hover:no-underline">
+    <Card className={`p-4 flex flex-col h-full ${className || ''}`}>
+      <Link href={`/products/${product.id}`} className="flex-1 flex flex-col">
         {images.length > 0 ? (
-          <div className="relative w-full aspect-square mb-4 flex items-center justify-center">
+          <div className="relative w-full aspect-square mb-4">
             <Image
               src={images[index] as string}
               alt={product.name}
               fill
-              sizes="100vw"
-              className="object-cover rounded"
-              unoptimized
-              priority
+              className="object-cover rounded-lg"
             />
             {hasMultiple && (
               <>
@@ -80,7 +72,7 @@ export default function ProductCard({ product, className }: ProductCardProps) {
         </div>
       </Link>
       <div className="flex gap-2 w-full mt-auto">
-        <div className="flex-1"><CartItem product={product} /></div>
+        <div className="flex-1"><CartItemBackend productId={product.id} /></div>
         <div className="flex-1"><BuyNowButton product={product} /></div>
       </div>
     </Card>

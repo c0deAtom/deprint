@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useState } from "react";
 import { JsonValue } from "@prisma/client/runtime/library";
+import { Loader2, CreditCard } from "lucide-react";
 
 interface Product {
   id: string;
@@ -42,6 +43,7 @@ export default function BuyNowButton({ product }: { product: Product }) {
       }
     } catch {
       console.error("Failed to create order");
+      toast.error("Purchase failed");
     }
     setLoading(false);
   };
@@ -50,11 +52,26 @@ export default function BuyNowButton({ product }: { product: Product }) {
     <Button 
       variant="default" 
       size="lg"
-      className="w-full"
+      className="w-full transition-all duration-200 hover:scale-105"
       onClick={handleBuyNow}
       disabled={loading || !session?.user}
     >
-      {loading ? "Processing..." : session?.user ? "Buy Now" : "Sign in to Buy"}
+      {loading ? (
+        <>
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          Processing...
+        </>
+      ) : session?.user ? (
+        <>
+          <CreditCard className="w-4 h-4 mr-2" />
+          Buy Now
+        </>
+      ) : (
+        <>
+          <CreditCard className="w-4 h-4 mr-2" />
+          Sign in to Buy
+        </>
+      )}
     </Button>
   );
 } 
