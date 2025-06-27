@@ -15,22 +15,18 @@ export async function POST(req: NextRequest) {
   try {
     const data = await req.json();
     console.log('Received data:', data);
-    
-    const { name, description, price, imageUrl } = data;
-    
+    const { name, description, price, imageUrls } = data;
     if (!name || !price) {
       return NextResponse.json({ error: 'Name and price are required.' }, { status: 400 });
     }
-    
     const product = await prisma.product.create({
-      data: { 
-        name, 
-        description: description || null, 
-        price: parseFloat(price), 
-        imageUrl: imageUrl || null 
+      data: {
+        name,
+        description: description || null,
+        price: parseFloat(price),
+        imageUrls: Array.isArray(imageUrls) ? imageUrls : [],
       },
     });
-    
     console.log('Created product:', product);
     return NextResponse.json(product);
   } catch (error) {

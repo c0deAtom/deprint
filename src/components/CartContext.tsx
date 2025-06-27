@@ -1,12 +1,22 @@
 "use client";
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
 import { useSession } from "next-auth/react";
+import { JsonValue } from "@prisma/client/runtime/library";
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+interface Product {
+  id: string;
+  name: string;
+  description?: string | null;
+  price: number;
+  imageUrls?: JsonValue;
+}
 
 interface CartProduct {
   id: string;
   name: string;
   price: number;
-  imageUrl?: string | null;
+  imageUrls?: JsonValue;
   quantity?: number;
 }
 

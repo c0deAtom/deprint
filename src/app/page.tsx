@@ -6,13 +6,14 @@ import { Button } from "@/components/ui/button";
 import { prisma } from "@/lib/db";
 import Image from "next/image";
 import CartItem from "@/components/CartItem";
+import { JsonValue } from "@prisma/client/runtime/library";
 
 interface Product {
   id: string;
   name: string;
   description?: string | null;
   price: number;
-  imageUrl?: string | null;
+  imageUrls?: JsonValue;
 }
 
 async function getProducts(): Promise<Product[]> {
@@ -44,8 +45,8 @@ export default async function Home() {
               {featuredProducts.map((product) => (
                 <Card key={product.id} className="flex flex-col items-center p-6 cursor-pointer hover:shadow-lg transition-shadow">
                   <Link href={`/products/${product.id}`} className="w-full flex flex-col items-center hover:no-underline">
-                    {product.imageUrl && product.imageUrl.trim() !== "" ? (
-                      <Image src={product.imageUrl} alt={product.name} width={128} height={128} className="w-32 h-32 object-contain mb-4" unoptimized />
+                    {Array.isArray(product.imageUrls) && product.imageUrls.length > 0 ? (
+                      <Image src={product.imageUrls[0] as string} alt={product.name} width={128} height={128} className="w-32 h-32 object-contain mb-4" unoptimized priority />
                     ) : (
                       <div className="w-32 h-32 bg-gray-200 flex items-center justify-center mb-4 text-gray-500">No Image</div>
                     )}
