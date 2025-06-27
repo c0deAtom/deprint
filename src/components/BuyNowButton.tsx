@@ -49,7 +49,8 @@ export default function BuyNowButton({ product }: { product: Product }) {
   return (
     <Button 
       variant="default" 
-      size="sm" 
+      size="lg"
+      className="w-full"
       onClick={handleBuyNow}
       disabled={loading || !session?.user}
     >

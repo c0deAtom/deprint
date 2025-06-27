@@ -7,6 +7,7 @@ import { prisma } from "@/lib/db";
 import Image from "next/image";
 import CartItem from "@/components/CartItem";
 import { JsonValue } from "@prisma/client/runtime/library";
+import ProductCard from "@/components/ProductCard";
 
 interface Product {
   id: string;
@@ -43,21 +44,20 @@ export default async function Home() {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 w-full max-w-5xl mb-12">
               {featuredProducts.map((product) => (
-                <Card key={product.id} className="flex flex-col items-center p-6 cursor-pointer hover:shadow-lg transition-shadow">
-                  <Link href={`/products/${product.id}`} className="w-full flex flex-col items-center hover:no-underline">
-                    {Array.isArray(product.imageUrls) && product.imageUrls.length > 0 ? (
-                      <Image src={product.imageUrls[0] as string} alt={product.name} width={128} height={128} className="w-32 h-32 object-contain mb-4" unoptimized priority />
-                    ) : (
-                      <div className="w-32 h-32 bg-gray-200 flex items-center justify-center mb-4 text-gray-500">No Image</div>
-                    )}
-                    <div className="font-semibold mb-2">{product.name}</div>
-                    {product.description && (
-                      <div className="text-sm text-muted-foreground mb-2 text-center">{product.description}</div>
-                    )}
-                    <div className="text-muted-foreground mb-4">${product.price.toFixed(2)}</div>
-                  </Link>
-                  <CartItem product={product} />
-                </Card>
+                <ProductCard key={product.id} product={product}>
+                  <div className="relative w-full aspect-square mb-4 flex items-center justify-center">
+                    <Image
+                      src={product.imageUrls as string}
+                      alt={product.name}
+                      fill
+                      sizes="100vw"
+                      className="object-cover rounded"
+                      unoptimized
+                      priority
+                    />
+                  </div>
+                  <div className="flex-1"><CartItem product={product} /></div>
+                </ProductCard>
               ))}
             </div>
             
