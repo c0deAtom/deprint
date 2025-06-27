@@ -31,14 +31,28 @@ export const authOptions = {
   },
   callbacks: {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async session(params: any) {
-      const { session, token } = params;
-      session.user = {
-        id: token.sub || "",
-        name: session.user?.name ?? undefined,
-        email: session.user?.email ?? undefined,
-        image: session.user?.image ?? undefined,
-      };
+    async jwt({ token, user }: any) {
+      if (user) {
+        token.id = user.id;
+      }
+      return token;
+    },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async session({ session, token }: any) {
+      if (token?.id) {
+        // Always fetch the latest user data from the DB
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { id: true, name: true, email: true }
+        });
+        if (dbUser) {
+          session.user = {
+            id: dbUser.id,
+            name: dbUser.name ?? undefined,
+            email: dbUser.email ?? undefined,
+          };
+        }
+      }
       return session;
     },
   },
