@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSession, signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,7 +28,7 @@ interface AuthForm {
   confirmPassword: string;
 }
 
-export default function CheckoutPage() {
+function CheckoutPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { items: cart, clearCart } = useCart();
@@ -212,41 +212,57 @@ export default function CheckoutPage() {
       toast.error("Please fill in all required fields");
       return;
     }
+    
+    console.log("Starting checkout with:", { cart, form, session });
     setCheckoutLoading(true);
+    
     try {
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          shippingInfo: {
-            name: form.name,
-            email: form.email,
-            address: {
-              line1: form.line1,
-              state: form.state,
-              city: form.city,
-              pincode: form.pincode,
-              mobile: form.mobile,
-            },
+      const checkoutData = {
+        shippingInfo: {
+          name: form.name,
+          email: form.email,
+          address: {
+            line1: form.line1,
+            state: form.state,
+            city: form.city,
+            pincode: form.pincode,
+            mobile: form.mobile,
           },
-          items: cart.map(item => ({
-            productId: item.id,
+        },
+        items: cart.map(item => {
+          const productId = item.productId || item.id;
+          console.log("Cart item:", item, "Using productId:", productId);
+          return {
+            productId: productId,
             name: item.name,
             price: item.price,
             quantity: item.quantity,
             imageUrls: Array.isArray(item.imageUrls) ? item.imageUrls.filter((url): url is string => typeof url === 'string') : undefined,
-          })),
+          };
         }),
+      };
+      
+      console.log("Sending checkout data:", checkoutData);
+      
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(checkoutData),
       });
+      
+      console.log("Checkout response status:", res.status);
+      
       if (res.ok) {
         const order = await res.json();
+        console.log("Order created:", order);
         setCheckoutSuccess(true);
-        toast.success(`Order placed successfully! Order #${order.id}`);
+        toast.success(`Order created successfully! Redirecting to payment...`);
         clearCart();
         window.dispatchEvent(new Event("cart-updated"));
-        router.push(`/orders/${order.id}`);
+        router.push(`/payment?orderId=${order.id}`);
       } else {
         const error = await res.json();
+        console.error("Checkout error response:", error);
         toast.error(error.error || "Checkout failed");
       }
     } catch (error) {
@@ -648,5 +664,13 @@ export default function CheckoutPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function CheckoutPageWrapper() {
+  return (
+    <Suspense fallback={<main className="flex flex-col items-center justify-center min-h-screen px-4 py-10"><div className="text-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div><p>Loading checkout...</p></div></main>}>
+      <CheckoutPage />
+    </Suspense>
   );
 } 

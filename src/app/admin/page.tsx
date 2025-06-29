@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import ProductImageCarousel from "@/components/ProductImageCarousel";
+import ImageUpload from "@/components/ImageUpload";
 import { Package, ShoppingCart, LogOut, User, Plus, Edit, Trash2, Search, Calendar, X } from "lucide-react";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 
@@ -83,10 +84,10 @@ export default function AdminPage() {
     totalOrders: 0,
     totalRevenue: 0,
   });
-  const [form, setForm] = useState({ name: "", description: "", price: "", category: "", imageUrls: "" });
+  const [form, setForm] = useState({ name: "", description: "", price: "", category: "", imageUrls: [] as string[] });
   const [loadingData, setLoadingData] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
-  const [editForm, setEditForm] = useState({ name: "", description: "", price: "", category: "", imageUrls: "" });
+  const [editForm, setEditForm] = useState({ name: "", description: "", price: "", category: "", imageUrls: [] as string[] });
   const [deleteProduct, setDeleteProduct] = useState<Product | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -208,7 +209,7 @@ export default function AdminPage() {
     e.preventDefault();
     setLoadingData(true);
     try {
-      const imageUrlsArr = form.imageUrls.split(',').map(url => url.trim()).filter(Boolean);
+      const imageUrlsArr = form.imageUrls.map(url => url.trim()).filter(Boolean);
       const token = localStorage.getItem("adminToken");
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (token) {
@@ -221,7 +222,7 @@ export default function AdminPage() {
       });
       if (res.ok) {
         toast.success("Product added successfully!");
-        setForm({ name: "", description: "", price: "", category: "", imageUrls: "" });
+        setForm({ name: "", description: "", price: "", category: "", imageUrls: [] });
         setShowAddDialog(false);
         fetchProducts();
         fetchStats();
@@ -241,7 +242,7 @@ export default function AdminPage() {
       description: product.description || "",
       price: product.price.toString(),
       category: product.category || "",
-      imageUrls: Array.isArray(product.imageUrls) ? product.imageUrls.join(', ') : "",
+      imageUrls: Array.isArray(product.imageUrls) ? product.imageUrls : [],
     });
   };
 
@@ -254,7 +255,7 @@ export default function AdminPage() {
     if (!editProduct) return;
     setLoadingData(true);
     try {
-      const imageUrlsArr = editForm.imageUrls.split(',').map(url => url.trim()).filter(Boolean);
+      const imageUrlsArr = editForm.imageUrls.map(url => url.trim()).filter(Boolean);
       const token = localStorage.getItem("adminToken");
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (token) {
@@ -986,11 +987,11 @@ export default function AdminPage() {
               </Select>
             </div>
             <div>
-              <label className="text-sm font-medium">Image URLs (comma-separated)</label>
-              <Input
-                name="imageUrls"
-                value={editForm.imageUrls}
-                onChange={handleEditChange}
+              <label className="text-sm font-medium">Product Images</label>
+              <ImageUpload
+                existingImages={editForm.imageUrls}
+                onImagesUploaded={(urls: string[]) => setEditForm({ ...editForm, imageUrls: urls })}
+                maxImages={5}
               />
             </div>
             <DialogFooter>
@@ -1079,12 +1080,11 @@ export default function AdminPage() {
               </Select>
             </div>
             <div>
-              <label className="text-sm font-medium">Image URLs (comma-separated)</label>
-              <Input
-                name="imageUrls"
-                value={form.imageUrls}
-                onChange={handleChange}
-                placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg"
+              <label className="text-sm font-medium">Product Images</label>
+              <ImageUpload
+                existingImages={form.imageUrls}
+                onImagesUploaded={(urls: string[]) => setForm({ ...form, imageUrls: urls })}
+                maxImages={5}
               />
             </div>
             <DialogFooter>

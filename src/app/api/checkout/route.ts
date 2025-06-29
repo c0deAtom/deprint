@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       data: {
         id: orderId,
         userId,
-        status: "CONFIRMED",
+        status: "PENDING",
         total: grandTotal,
         shippingAddress: shippingInfo,
         items: {
@@ -56,6 +56,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(confirmedOrder);
   } catch (error) {
     console.error("Error during checkout:", error);
-    return NextResponse.json({ error: "Checkout failed" }, { status: 500 });
+    console.error("Request body:", { shippingInfo, items });
+    return NextResponse.json({ 
+      error: "Checkout failed", 
+      details: error instanceof Error ? error.message : "Unknown error" 
+    }, { status: 500 });
   }
 } 
