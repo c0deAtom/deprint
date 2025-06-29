@@ -35,11 +35,14 @@ interface Order {
   items: OrderItem[];
   shippingAddress?: {
     name: string;
-    address: string;
-    city: string;
-    zipCode: string;
-    phone: string;
     email: string;
+    address: {
+      line1: string;
+      state: string;
+      city: string;
+      pincode: string;
+      mobile: string;
+    };
   };
 }
 
@@ -565,10 +568,76 @@ export default function AdminPage() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
+                    <div className="space-y-6">
+                      {/* Shipping Address - Displayed prominently first */}
+                      {order.shippingAddress && (
+                        <div className="bg-muted/50 p-4 rounded-lg border">
+                          <h4 className="font-semibold text-base mb-3 flex items-center gap-2">
+                            📦 Shipping Address
+                          </h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {(() => {
+                              const address = order.shippingAddress;
+                              if (typeof address === 'object' && address !== null) {
+                                return (
+                                  <>
+                                    <div className="space-y-2">
+                                      {address.name && (
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-sm font-medium text-muted-foreground">Name:</span>
+                                          <span className="font-medium">{address.name}</span>
+                                        </div>
+                                      )}
+                                      {address.email && (
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-sm font-medium text-muted-foreground">Email:</span>
+                                          <span>{address.email}</span>
+                                        </div>
+                                      )}
+                                      {address.address?.mobile && (
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-sm font-medium text-muted-foreground">Phone:</span>
+                                          <span>{address.address.mobile}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="space-y-2">
+                                      {address.address?.line1 && (
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-sm font-medium text-muted-foreground">Address:</span>
+                                          <span>{address.address.line1}</span>
+                                        </div>
+                                      )}
+                                      {(address.address?.city || address.address?.state) && (
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-sm font-medium text-muted-foreground">City/State:</span>
+                                          <span>{[address.address.city, address.address.state].filter(Boolean).join(', ')}</span>
+                                        </div>
+                                      )}
+                                      {address.address?.pincode && (
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-sm font-medium text-muted-foreground">Pincode:</span>
+                                          <span className="font-medium">{address.address.pincode}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </>
+                                );
+                              }
+                              return (
+                                <div className="col-span-2 text-muted-foreground">
+                                  Address information not available
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Order Status */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className="text-sm font-medium">Status</label>
+                          <label className="text-sm font-medium">Order Status</label>
                           <Select value={order.status} onValueChange={(value) => updateOrderStatus(order.id, value)}>
                             <SelectTrigger>
                               <SelectValue />
@@ -582,36 +651,21 @@ export default function AdminPage() {
                           </Select>
                         </div>
                       </div>
+
+                      {/* Order Items */}
                       <div>
-                        <h4 className="font-medium mb-2">Items</h4>
+                        <h4 className="font-medium mb-3 flex items-center gap-2">
+                          🛍️ Order Items
+                        </h4>
                         <div className="space-y-2">
                           {order.items.map((item) => (
-                            <div key={item.id} className="flex justify-between text-sm">
+                            <div key={item.id} className="flex justify-between text-sm p-2 bg-muted/30 rounded">
                               <span>{item.product.name} × {item.quantity}</span>
-                              <span>₹{item.price.toFixed(2)}</span>
+                              <span className="font-medium">₹{item.price.toFixed(2)}</span>
                             </div>
                           ))}
                         </div>
                       </div>
-                      {order.shippingAddress && (
-                        <div className="mb-2">
-                          <h4 className="font-medium">Shipping Address</h4>
-                          <div className="text-sm text-muted-foreground whitespace-pre-line">
-                            {typeof order.shippingAddress === 'object'
-                              ? [
-                                  order.shippingAddress.name,
-                                  order.shippingAddress.address,
-                                  order.shippingAddress.city,
-                                  order.shippingAddress.zipCode,
-                                  order.shippingAddress.phone,
-                                  order.shippingAddress.email,
-                                ]
-                                  .filter(Boolean)
-                                  .join(', ')
-                              : String(order.shippingAddress)}
-                          </div>
-                        </div>
-                      )}
                     </div>
                   </CardContent>
                 </Card>
