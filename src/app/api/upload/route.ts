@@ -4,6 +4,9 @@ import { v2 as cloudinary } from "cloudinary";
 // Force Node.js runtime for file uploads on Vercel
 export const runtime = "nodejs";
 
+// Increase timeout for Vercel (max 10 seconds for hobby plan)
+export const maxDuration = 10;
+
 // Configure Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -22,8 +25,12 @@ export async function POST(req: NextRequest) {
 
     console.log(`Processing ${files.length} files for upload`);
     
-    const uploadPromises = files.map(async (file, index) => {
-      console.log(`Processing file ${index + 1}: ${file.name}, type: ${file.type}, size: ${file.size} bytes`);
+    // Process files sequentially to avoid timeout issues
+    const imageUrls: string[] = [];
+    
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      console.log(`Processing file ${i + 1}: ${file.name}, type: ${file.type}, size: ${file.size} bytes`);
       
       // Check file size for Vercel limits (4.5MB)
       const maxSize = 4.5 * 1024 * 1024; // 4.5MB
@@ -42,11 +49,11 @@ export async function POST(req: NextRequest) {
         console.log(`Processing GIF file: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
       }
       
-      // Upload to Cloudinary
-      return new Promise<{ secure_url: string }>((resolve, reject) => {
-        const uploadOptions = {
+      // Upload to Cloudinary with timeout
+      const uploadResult = await new Promise<{ secure_url: string }>((resolve, reject) => {
+        let uploadOptions: any = {
           folder: "ecommerce-products",
-          resource_type: "auto" as const, // This allows videos, GIFs, and images
+          resource_type: "auto" as const,
           transformation: [
             { width: 800, height: 800, crop: "limit" },
             { quality: "auto" },
@@ -60,14 +67,27 @@ export async function POST(req: NextRequest) {
         // Add GIF-specific options
         if (isGif) {
           console.log(`Processing GIF file: ${file.name}`);
-          // For GIFs, we might want to preserve the animation
-          uploadOptions.transformation = [
-            { width: 800, height: 800, crop: "limit" },
-            { quality: "auto" }
-          ];
+          // For large GIFs, upload without transformations to avoid timeout
+          if (file.size > 2 * 1024 * 1024) { // If GIF is larger than 2MB
+            console.log(`Large GIF detected, uploading without transformations: ${file.name}`);
+            uploadOptions = {
+              folder: "ecommerce-products",
+              resource_type: "auto" as const,
+              // No transformations for large GIFs to avoid timeout
+            };
+          } else {
+            // For smaller GIFs, use basic transformation
+            uploadOptions = {
+              folder: "ecommerce-products",
+              resource_type: "auto" as const,
+              transformation: [
+                { width: 800, height: 800, crop: "limit" }
+              ],
+            };
+          }
         }
 
-        cloudinary.uploader.upload_stream(
+        const uploadStream = cloudinary.uploader.upload_stream(
           uploadOptions,
           (error, result) => {
             if (error) {
@@ -78,12 +98,23 @@ export async function POST(req: NextRequest) {
               resolve(result as { secure_url: string });
             }
           }
-        ).end(buffer);
-      });
-    });
+        );
 
-    const results = await Promise.all(uploadPromises);
-    const imageUrls = results.map((result) => result.secure_url);
+        // Set a timeout for the upload
+        const timeout = setTimeout(() => {
+          uploadStream.destroy();
+          reject(new Error(`Upload timeout for ${file.name}`));
+        }, 8000); // 8 second timeout
+
+        uploadStream.on('finish', () => {
+          clearTimeout(timeout);
+        });
+
+        uploadStream.end(buffer);
+      });
+
+      imageUrls.push(uploadResult.secure_url);
+    }
 
     console.log(`Successfully uploaded ${imageUrls.length} files`);
 

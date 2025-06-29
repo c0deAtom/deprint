@@ -37,6 +37,12 @@ export default function ImageUpload({
         formData.append("images", file);
       });
 
+      // Show specific message for GIFs
+      const hasGif = acceptedFiles.some(file => file.type === 'image/gif' || file.name.toLowerCase().endsWith('.gif'));
+      if (hasGif) {
+        toast.info("Uploading GIF files may take longer. Please be patient...");
+      }
+
       const response = await fetch("/api/upload", {
         method: "POST",
         body: formData,
@@ -50,11 +56,12 @@ export default function ImageUpload({
         toast.success(data.message);
       } else {
         const error = await response.json();
-        toast.error(error.error || "Upload failed");
+        const errorMessage = error.details || error.error || "Upload failed";
+        toast.error(`Upload failed: ${errorMessage}`);
       }
     } catch (error) {
       console.error("Upload error:", error);
-      toast.error("Upload failed");
+      toast.error("Upload failed. Please try again with a smaller file.");
     } finally {
       setUploading(false);
     }
