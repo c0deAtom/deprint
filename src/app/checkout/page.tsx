@@ -302,7 +302,7 @@ export default function CheckoutPage() {
   // Show auth forms for guest users
   if (showAuth) {
     return (
-      <main className="flex flex-col items-center px-4 min-h-screen">
+      <main className="flex flex-col items-center px-4 py-10 min-h-screen">
         <div className="w-full max-w-md">
           <h1 className="text-3xl font-bold mb-8 text-center">Complete Your Order</h1>
           
@@ -423,7 +423,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <main className="flex flex-col items-center px-4 min-h-screen">
+    <main className="flex flex-col items-center px-4 my-10 min-h-screen">
       <div className="w-full max-w-6xl">
         <h1 className="text-3xl font-bold mb-8 text-center">Checkout</h1>
         

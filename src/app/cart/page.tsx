@@ -118,7 +118,7 @@ export default function CartPage() {
   }
 
   return (
-    <main className="flex flex-col items-center px-4 min-h-screen">
+    <main className="flex flex-col items-center px-4 my-10 min-h-screen">
       <h1 className="text-2xl font-bold mb-6">My Cart</h1>
       {loading ? (
         <div className="w-full max-w-4xl space-y-6">
