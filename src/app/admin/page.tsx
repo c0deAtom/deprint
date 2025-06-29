@@ -1007,16 +1007,16 @@ export default function AdminPage() {
               </Select>
             </div>
             <div>
-              <label className="text-sm font-medium">Product Images</label>
+              <label className="text-sm font-medium">Product Media</label>
               <Tabs value={editImageTab} onValueChange={(value) => setEditImageTab(value as "upload" | "link")} className="mt-2">
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="upload" className="flex items-center gap-2">
                     <Upload className="w-4 h-4" />
-                    Upload Images
+                    Upload Media
                   </TabsTrigger>
                   <TabsTrigger value="link" className="flex items-center gap-2">
                     <Link className="w-4 h-4" />
-                    Image Links
+                    Media Links
                   </TabsTrigger>
                 </TabsList>
                 
@@ -1037,7 +1037,7 @@ export default function AdminPage() {
                       placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg"
                     />
                     <p className="text-xs text-muted-foreground">
-                      Enter image URLs separated by commas. You can use both upload and links together.
+                      Enter media URLs separated by commas. You can use both upload and links together.
                     </p>
                   </div>
                 </TabsContent>
@@ -1129,16 +1129,16 @@ export default function AdminPage() {
               </Select>
             </div>
             <div>
-              <label className="text-sm font-medium">Product Images</label>
+              <label className="text-sm font-medium">Product Media</label>
               <Tabs value={imageTab} onValueChange={(value) => setImageTab(value as "upload" | "link")} className="mt-2">
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="upload" className="flex items-center gap-2">
                     <Upload className="w-4 h-4" />
-                    Upload Images
+                    Upload Media
                   </TabsTrigger>
                   <TabsTrigger value="link" className="flex items-center gap-2">
                     <Link className="w-4 h-4" />
-                    Image Links
+                    Media Links
                   </TabsTrigger>
                 </TabsList>
                 
@@ -1159,7 +1159,7 @@ export default function AdminPage() {
                       placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg"
                     />
                     <p className="text-xs text-muted-foreground">
-                      Enter image URLs separated by commas. You can use both upload and links together.
+                      Enter media URLs separated by commas. You can use both upload and links together.
                     </p>
                   </div>
                 </TabsContent>

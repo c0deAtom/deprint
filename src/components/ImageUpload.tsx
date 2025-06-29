@@ -63,9 +63,10 @@ export default function ImageUpload({
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      "image/*": [".jpeg", ".jpg", ".png", ".webp", ".gif"]
+      "image/*": [".jpeg", ".jpg", ".png", ".webp", ".gif"],
+      "video/*": [".mp4", ".mov", ".avi", ".webm", ".mkv"]
     },
-    maxSize: 5 * 1024 * 1024, // 5MB
+    maxSize: 50 * 1024 * 1024, // 50MB for videos
     multiple: true,
   });
 
@@ -98,13 +99,13 @@ export default function ImageUpload({
             ) : (
               <div>
                 <p className="text-lg font-medium mb-2">
-                  {uploading ? "Uploading..." : "Upload Product Images"}
+                  {uploading ? "Uploading..." : "Upload Product Media"}
                 </p>
                 <p className="text-sm text-gray-500 mb-4">
                   Drag & drop images here, or click to select files
                 </p>
                 <p className="text-xs text-gray-400">
-                  Supports: JPG, PNG, WebP, GIF (max 5MB each, up to {maxImages} images)
+                  Supports: JPG, PNG, WebP, GIF, MP4, MOV, AVI, WebM, MKV (max 50MB each, up to {maxImages} files)
                 </p>
               </div>
             )}
@@ -112,31 +113,46 @@ export default function ImageUpload({
         </CardContent>
       </Card>
 
-      {/* Image Preview */}
+      {/* Media Preview */}
       {images.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {images.map((image, index) => (
-            <Card key={index} className="relative group">
-              <CardContent className="p-2">
-                <div className="aspect-square relative overflow-hidden rounded-lg">
-                  <Image
-                    src={image}
-                    alt={`Product image ${index + 1}`}
-                    fill
-                    className="object-cover"
-                  />
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => removeImage(index)}
-                  >
-                    <X className="w-3 h-3" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          {images.map((media, index) => {
+            const isVideo = media.includes('.mp4') || media.includes('.mov') || media.includes('.avi') || media.includes('.webm') || media.includes('.mkv');
+            
+            return (
+              <Card key={index} className="relative group">
+                <CardContent className="p-2">
+                  <div className="aspect-square relative overflow-hidden rounded-lg">
+                    {isVideo ? (
+                      <video
+                        src={media}
+                        className="w-full h-full object-cover"
+                        muted
+                        loop
+                        onMouseEnter={(e) => e.currentTarget.play()}
+                        onMouseLeave={(e) => e.currentTarget.pause()}
+                      />
+                    ) : (
+                      <Image
+                        src={media}
+                        alt={`Product media ${index + 1}`}
+                        fill
+                        className="object-cover"
+                      />
+                    )}
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => removeImage(index)}
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 

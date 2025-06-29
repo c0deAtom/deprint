@@ -35,6 +35,12 @@ export async function POST(req: NextRequest) {
               { width: 800, height: 800, crop: "limit" },
               { quality: "auto" },
             ],
+            video_codec: "auto",
+            audio_codec: "none",
+            eager: [
+              { width: 800, height: 800, crop: "limit", quality: "auto" }
+            ],
+            eager_async: true,
           },
           (error, result) => {
             if (error) {
