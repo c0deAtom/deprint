@@ -51,9 +51,17 @@ export async function POST(req: NextRequest) {
       
       // Upload to Cloudinary with timeout
       const uploadResult = await new Promise<{ secure_url: string }>((resolve, reject) => {
-        let uploadOptions: any = {
+        interface UploadOptions {
+          folder: string;
+          resource_type: "auto";
+          transformation?: Array<{ width?: number; height?: number; crop?: string; quality?: string }>;
+          eager?: Array<{ width: number; height: number; crop: string; quality: string }>;
+          eager_async?: boolean;
+        }
+
+        let uploadOptions: UploadOptions = {
           folder: "ecommerce-products",
-          resource_type: "auto" as const,
+          resource_type: "auto",
           transformation: [
             { width: 800, height: 800, crop: "limit" },
             { quality: "auto" },
@@ -72,14 +80,14 @@ export async function POST(req: NextRequest) {
             console.log(`Large GIF detected, uploading without transformations: ${file.name}`);
             uploadOptions = {
               folder: "ecommerce-products",
-              resource_type: "auto" as const,
+              resource_type: "auto",
               // No transformations for large GIFs to avoid timeout
             };
           } else {
             // For smaller GIFs, use basic transformation
             uploadOptions = {
               folder: "ecommerce-products",
-              resource_type: "auto" as const,
+              resource_type: "auto",
               transformation: [
                 { width: 800, height: 800, crop: "limit" }
               ],
