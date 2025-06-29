@@ -39,27 +39,27 @@ export default function Navbar() {
   return (
     <nav className="bg-white shadow-sm border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2">
+        <div className="flex items-center h-16">
+          {/* Company Logo and Name - Left side with no extra space */}
+          <Link href="/" className="flex items-center">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">E</span>
             </div>
-            <span className="text-xl font-bold text-gray-900">EcomStore</span>
+            <span className="text-xl font-bold text-gray-900 ml-2">EcomStore</span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
-            <Link href="/" className="text-gray-700 hover:text-blue-600 transition-colors">
+          {/* Navigation Buttons - Center with little space */}
+          <div className="hidden md:flex items-center ml-8 space-x-6">
+            <Link href="/" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
               Home
             </Link>
-            <Link href="/products" className="text-gray-700 hover:text-blue-600 transition-colors">
+            <Link href="/products" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
               Products
             </Link>
           </div>
 
-          {/* Desktop Actions */}
-          <div className="hidden md:flex items-center space-x-4">
+          {/* User Profile and Options - Right side */}
+          <div className="hidden md:flex items-center ml-auto space-x-4">
             {/* Cart */}
             <Link href="/cart" className="relative">
               <Button variant="ghost" size="sm" className="relative">
@@ -126,7 +126,7 @@ export default function Navbar() {
           </div>
 
           {/* Mobile Menu Button */}
-          <div className="md:hidden">
+          <div className="md:hidden ml-auto">
             <Button
               variant="ghost"
               size="sm"

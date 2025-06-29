@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { CreditCard, Loader2 } from "lucide-react";
@@ -19,6 +19,7 @@ interface Product {
 
 export default function BuyNowButton({ product }: { product: Product }) {
   const [loading, setLoading] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
   const router = useRouter();
   const { addToCart, isInCart } = useCart();
 
@@ -29,6 +30,7 @@ export default function BuyNowButton({ product }: { product: Product }) {
       if (isInCart(product.id)) {
         // If already in cart, just redirect to checkout
         toast.success("Product already in cart! Redirecting to checkout...");
+        setIsNavigating(true);
         setTimeout(() => {
           router.push("/checkout");
         }, 1000);
@@ -44,6 +46,7 @@ export default function BuyNowButton({ product }: { product: Product }) {
       });
 
       toast.success("Product added to cart! Redirecting to checkout...");
+      setIsNavigating(true);
       
       // Small delay to show the success message before redirecting
       setTimeout(() => {
@@ -52,10 +55,19 @@ export default function BuyNowButton({ product }: { product: Product }) {
     } catch (error) {
       console.error("Failed to add product to cart:", error);
       toast.error("Failed to add product to cart");
-    } finally {
       setLoading(false);
     }
   };
+
+  // Reset loading state when component unmounts or navigation completes
+  useEffect(() => {
+    return () => {
+      setLoading(false);
+      setIsNavigating(false);
+    };
+  }, []);
+
+  const isLoading = loading || isNavigating;
 
   return (
     <Button 
@@ -63,16 +75,16 @@ export default function BuyNowButton({ product }: { product: Product }) {
       size="lg"
       className="w-full transition-all duration-200 hover:scale-105"
       onClick={handleBuyNow}
-      disabled={loading}
+      disabled={isLoading}
     >
-      {loading ? (
+      {isLoading ? (
         <>
           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          Buying...
+          {isNavigating ? "Buying..." : "Processing..."}
         </>
       ) : (
         <>
-          <CreditCard className="w-4 h-4 mr-2" />
+          <CreditCard className="w-4 h-4 mr-2" />     
           Buy Now
         </>
       )}
