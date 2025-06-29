@@ -66,8 +66,19 @@ export default function ImageUpload({
       "image/*": [".jpeg", ".jpg", ".png", ".webp", ".gif"],
       "video/*": [".mp4", ".mov", ".avi", ".webm", ".mkv"]
     },
-    maxSize: 50 * 1024 * 1024, // 50MB for videos
+    maxSize: 4.5 * 1024 * 1024, // 4.5MB for Vercel compatibility
     multiple: true,
+    onDropRejected: (rejectedFiles) => {
+      rejectedFiles.forEach(({ file, errors }) => {
+        errors.forEach((error) => {
+          if (error.code === 'file-too-large') {
+            toast.error(`File ${file.name} is too large. Maximum size is 4.5MB for deployment compatibility.`);
+          } else {
+            toast.error(`Error with ${file.name}: ${error.message}`);
+          }
+        });
+      });
+    },
   });
 
   const removeImage = (index: number) => {
@@ -105,7 +116,7 @@ export default function ImageUpload({
                   Drag & drop images here, or click to select files
                 </p>
                 <p className="text-xs text-gray-400">
-                  Supports: JPG, PNG, WebP, GIF, MP4, MOV, AVI, WebM, MKV (max 50MB each, up to {maxImages} files)
+                  Supports: JPG, PNG, WebP, GIF, MP4, MOV, AVI, WebM, MKV (max 4.5MB each, up to {maxImages} files)
                 </p>
               </div>
             )}
