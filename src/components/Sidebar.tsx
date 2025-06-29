@@ -1,11 +1,16 @@
 import Link from "next/link";
 
 const categories = [
-  { name: "Toys", href: "/products?category=toys" },
-  { name: "Pots", href: "/products?category=pots" },
-  { name: "Keychain", href: "/products?category=keychain" },
-  { name: "3Dcube", href: "/products?category=3dcube" },
-  // Add more categories as needed
+  "Toys",
+  "Pots",
+  "Keychain",
+  "3Dcube",
+  "Electronics",
+  "Home & Garden",
+  "Fashion",
+  "Books",
+  "Sports",
+  "Other"
 ];
 
 export default function Sidebar() {
@@ -15,9 +20,12 @@ export default function Sidebar() {
       <div>
         <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">Categories</div>
         <nav className="flex flex-col gap-1">
+          <Link href="/" className="hover:underline text-sm py-1 px-2 rounded hover:bg-gray-100 font-medium">
+            All Products
+          </Link>
           {categories.map((cat) => (
-            <Link key={cat.name} href={cat.href} className="hover:underline text-sm py-1 px-2 rounded hover:bg-gray-100">
-              {cat.name}
+            <Link key={cat} href={`/?category=${encodeURIComponent(cat)}`} className="hover:underline text-sm py-1 px-2 rounded hover:bg-gray-100">
+              {cat}
             </Link>
           ))}
         </nav>

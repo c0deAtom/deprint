@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { JsonValue } from "@prisma/client/runtime/library";
 import BuyNowButton from "@/components/BuyNowButton";
 import CartItemBackend from "@/components/CartItemBackend";
@@ -15,6 +16,7 @@ interface ProductCardProps {
     description?: string | null;
     price: number;
     imageUrls?: JsonValue;
+    category?: string | null;
   };
   className?: string;
 }
@@ -65,6 +67,11 @@ export default function ProductCard({ product, className }: ProductCardProps) {
         )}
         <div className="w-full flex flex-col items-start flex-1">
           <h2 className="text-2xl font-bold text-left mb-1 w-full">{product.name}</h2>
+          {product.category && (
+            <Badge variant="secondary" className="mb-2 w-fit">
+              {product.category}
+            </Badge>
+          )}
           {product.description && (
             <div className="text-s text-muted-foreground mb-2 h-24 text-left w-full line-clamp-4 break-words">{product.description}</div>
           )}

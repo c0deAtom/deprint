@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
   try {
     const data = await req.json();
     console.log('Received data:', data);
-    const { name, description, price, imageUrls } = data;
+    const { name, description, price, category, imageUrls } = data;
     if (!name || !price) {
       return NextResponse.json({ error: 'Name and price are required.' }, { status: 400 });
     }
@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
         name,
         description: description || null,
         price: parseFloat(price),
+        category: category || null,
         imageUrls: Array.isArray(imageUrls) ? imageUrls : [],
       },
     });

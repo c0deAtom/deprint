@@ -1,34 +1,29 @@
 import { prisma } from "@/lib/db";
 import ProductCard from "@/components/ProductCard";
-import { JsonValue } from "@prisma/client/runtime/library";
 
-interface Product {
-  id: string;
-  name: string;
-  description?: string | null;
-  price: number;
-  imageUrls?: JsonValue;
-}
-
-async function getProducts(): Promise<Product[]> {
-  try {
-    const products = await prisma.product.findMany({ orderBy: { createdAt: "desc" } });
-    return products;
-  } catch (error) {
-    console.error("Error fetching products from Prisma:", error);
-    return [];
-  }
-}
-
-export default async function ProductsPage() {
-  const products = await getProducts();
+export default async function ProductsPage({ 
+  searchParams 
+}: { 
+  searchParams: Promise<{ category?: string }> 
+}) {
+  const params = await searchParams;
+  const category = params?.category;
+  const products = await prisma.product.findMany({
+    where: category ? { category } : {},
+    orderBy: { createdAt: "desc" },
+  });
 
   return (
     <div className="min-h-screen flex flex-col">
       <main className="flex-1 flex flex-col items-center justify-center py-12 px-4 md:px-8">
-        <h1 className="text-3xl md:text-5xl font-bold mb-8 text-center">All Products</h1>
+        <h1 className="text-3xl md:text-5xl font-bold mb-8 text-center">
+          {category ? `${category} Products` : "All Products"}
+        </h1>
         <p className="text-muted-foreground text-center mb-12 max-w-2xl">
-          Browse our full collection of high-quality products.
+          {category 
+            ? `Browse our collection of ${category.toLowerCase()} products.`
+            : "Browse our full collection of high-quality products."
+          }
         </p>
         {products.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 w-full max-w-5xl mb-12">
@@ -38,7 +33,9 @@ export default async function ProductsPage() {
           </div>
         ) : (
           <div className="text-center">
-            <p className="text-muted-foreground mb-4">No products available yet.</p>
+            <p className="text-muted-foreground mb-4">
+              {category ? `No ${category.toLowerCase()} products available yet.` : "No products available yet."}
+            </p>
           </div>
         )}
       </main>

@@ -11,6 +11,7 @@ export async function PUT(req: NextRequest) {
         name: data.name,
         description: data.description || null,
         price: parseFloat(data.price),
+        category: data.category || null,
         imageUrls: Array.isArray(data.imageUrls) ? data.imageUrls as string[] : [],
       },
     });

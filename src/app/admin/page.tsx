@@ -17,6 +17,7 @@ interface Product {
   name: string;
   description?: string;
   price: number;
+  category?: string;
   imageUrls?: string[];
   createdAt: string;
 }
@@ -73,11 +74,25 @@ export default function AdminPage() {
     totalRevenue: 0,
     pendingOrders: 0
   });
-  const [form, setForm] = useState({ name: "", description: "", price: "", imageUrls: "" });
+  const [form, setForm] = useState({ name: "", description: "", price: "", category: "", imageUrls: "" });
   const [loadingData, setLoadingData] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
-  const [editForm, setEditForm] = useState({ name: "", description: "", price: "", imageUrls: "" });
+  const [editForm, setEditForm] = useState({ name: "", description: "", price: "", category: "", imageUrls: "" });
   const [deleteProduct, setDeleteProduct] = useState<Product | null>(null);
+
+  // Predefined categories
+  const categories = [
+    "Toys",
+    "Pots", 
+    "Keychain",
+    "3Dcube",
+    "Electronics",
+    "Home & Garden",
+    "Fashion",
+    "Books",
+    "Sports",
+    "Other"
+  ];
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -181,7 +196,7 @@ export default function AdminPage() {
       if (res.ok) {
         const newProduct = await res.json();
         setProducts([newProduct, ...products]);
-        setForm({ name: "", description: "", price: "", imageUrls: "" });
+        setForm({ name: "", description: "", price: "", category: "", imageUrls: "" });
         toast.success("Product added successfully!");
         fetchStats();
       } else {
@@ -200,6 +215,7 @@ export default function AdminPage() {
       name: product.name,
       description: product.description || "",
       price: product.price.toString(),
+      category: product.category || "",
       imageUrls: Array.isArray(product.imageUrls) ? product.imageUrls.join(', ') : "",
     });
   };
@@ -418,6 +434,21 @@ export default function AdminPage() {
                     />
                   </div>
                   <div>
+                    <label className="text-sm font-medium">Category</label>
+                    <Select value={form.category} onValueChange={(value) => setForm({ ...form, category: value })}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((category) => (
+                          <SelectItem key={category} value={category}>
+                            {category}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
                     <label className="text-sm font-medium">Image URLs (comma-separated)</label>
                     <Input
                       name="imageUrls"
@@ -448,6 +479,11 @@ export default function AdminPage() {
                     </div>
                     <CardTitle className="text-lg">{product.name}</CardTitle>
                     <CardDescription className="line-clamp-2">{product.description}</CardDescription>
+                    {product.category && (
+                      <Badge variant="secondary" className="w-fit">
+                        {product.category}
+                      </Badge>
+                    )}
                     <div className="text-lg font-bold text-green-600">₹{product.price.toFixed(2)}</div>
                   </CardHeader>
                   <CardContent className="flex gap-2">
@@ -578,6 +614,21 @@ export default function AdminPage() {
                 value={editForm.description}
                 onChange={handleEditChange}
               />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Category</label>
+              <Select value={editForm.category} onValueChange={(value) => setEditForm({ ...editForm, category: value })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <label className="text-sm font-medium">Image URLs (comma-separated)</label>

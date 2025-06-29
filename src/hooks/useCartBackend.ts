@@ -74,6 +74,11 @@ export function useCartBackend(): UseCartBackendReturn {
 
   // Fetch cart status (lightweight)
   const checkCartStatus = useCallback(async (productId?: string) => {
+    if (session === undefined) {
+      // Session is still loading, don't make any requests yet
+      return;
+    }
+    
     if (!session?.user) {
       setCartStatus({
         items: [],
@@ -102,10 +107,15 @@ export function useCartBackend(): UseCartBackendReturn {
     } finally {
       setLoading(false);
     }
-  }, [session?.user]);
+  }, [session]);
 
   // Fetch complete cart details (for cart page)
   const refreshCartDetails = useCallback(async () => {
+    if (session === undefined) {
+      // Session is still loading, don't make any requests yet
+      return;
+    }
+    
     if (!session?.user) {
       setCartItems([]);
       setLoading(false);
@@ -126,7 +136,7 @@ export function useCartBackend(): UseCartBackendReturn {
     } finally {
       setLoading(false);
     }
-  }, [session?.user]);
+  }, [session]);
 
   // Optimistic update cart items
   const updateCartItemsOptimistically = useCallback((productId: string, action: 'add' | 'remove') => {
@@ -139,6 +149,11 @@ export function useCartBackend(): UseCartBackendReturn {
 
   // Quick add to cart
   const addToCart = useCallback(async (productId: string) => {
+    if (session === undefined) {
+      toast.error('Please wait while we load your session');
+      return;
+    }
+    
     if (!session?.user) {
       toast.error('Please sign in to add items to cart');
       return;
@@ -183,10 +198,15 @@ export function useCartBackend(): UseCartBackendReturn {
         return newSet;
       });
     }
-  }, [session?.user, checkCartStatus]);
+  }, [session, checkCartStatus]);
 
   // Quick remove from cart
   const removeFromCart = useCallback(async (productId: string) => {
+    if (session === undefined) {
+      toast.error('Please wait while we load your session');
+      return;
+    }
+    
     if (!session?.user) {
       toast.error('Please sign in to manage cart');
       return;
@@ -231,12 +251,14 @@ export function useCartBackend(): UseCartBackendReturn {
         return newSet;
       });
     }
-  }, [session?.user, checkCartStatus, updateCartItemsOptimistically, refreshCartDetails]);
+  }, [session, checkCartStatus, updateCartItemsOptimistically, refreshCartDetails]);
 
   // Initialize cart status
   useEffect(() => {
-    checkCartStatus();
-  }, [checkCartStatus]);
+    if (session !== undefined) { // Only check when session is loaded (not loading)
+      checkCartStatus();
+    }
+  }, [checkCartStatus, session]);
 
   // Listen for cart updates
   useEffect(() => {

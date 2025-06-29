@@ -1,30 +1,20 @@
 export const revalidate = 0;
 
 import { prisma } from "@/lib/db";
-import { JsonValue } from "@prisma/client/runtime/library";
 import Sidebar from "@/components/Sidebar";
 import ProductSearch from "@/components/ProductSearch";
 
-interface Product {
-  id: string;
-  name: string;
-  description?: string | null;
-  price: number;
-  imageUrls?: JsonValue;
-}
-
-async function getProducts(): Promise<Product[]> {
-  try {
-    const products = await prisma.product.findMany({ orderBy: { createdAt: "desc" } });
-    return products;
-  } catch (error) {
-    console.error("Error fetching products from Prisma:", error);
-    return [];
-  }
-}
-
-export default async function Home() {
-  const products = await getProducts();
+export default async function Home({ 
+  searchParams 
+}: { 
+  searchParams: Promise<{ category?: string }> 
+}) {
+  const params = await searchParams;
+  const category = params?.category;
+  const products = await prisma.product.findMany({
+    where: category ? { category } : {},
+    orderBy: { createdAt: "desc" },
+  });
 
   return (
     <div className="min-h-screen flex flex-col">
