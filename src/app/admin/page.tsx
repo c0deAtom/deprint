@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import ProductImageCarousel from "@/components/ProductImageCarousel";
-import { Package, ShoppingCart, LogOut, User, Plus, Edit, Trash2, Search } from "lucide-react";
+import { Package, ShoppingCart, LogOut, User, Plus, Edit, Trash2, Search, Calendar, X } from "lucide-react";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 
 interface Product {
@@ -91,6 +91,17 @@ export default function AdminPage() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [productsLoading, setProductsLoading] = useState(false);
+  
+  // Date filter state
+  const [dateFilter, setDateFilter] = useState<{
+    type: 'all' | 'today' | 'yesterday' | 'last7days' | 'last30days' | 'custom';
+    startDate: string;
+    endDate: string;
+  }>({
+    type: 'all',
+    startDate: "",
+    endDate: ""
+  });
 
   // Predefined categories
   const categories = [
@@ -322,6 +333,88 @@ export default function AdminPage() {
     }
   };
 
+  // Date filtering logic
+  const filteredOrders = orders.filter(order => {
+    if (dateFilter.type === 'all') {
+      return true; // No date filter applied
+    }
+
+    const orderDate = new Date(order.createdAt);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    switch (dateFilter.type) {
+      case 'today':
+        const todayEnd = new Date(today);
+        todayEnd.setHours(23, 59, 59, 999);
+        return orderDate >= today && orderDate <= todayEnd;
+
+      case 'yesterday':
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayEnd = new Date(yesterday);
+        yesterdayEnd.setHours(23, 59, 59, 999);
+        return orderDate >= yesterday && orderDate <= yesterdayEnd;
+
+      case 'last7days':
+        const sevenDaysAgo = new Date(today);
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        return orderDate >= sevenDaysAgo;
+
+      case 'last30days':
+        const thirtyDaysAgo = new Date(today);
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        return orderDate >= thirtyDaysAgo;
+
+      case 'custom':
+        if (!dateFilter.startDate && !dateFilter.endDate) {
+          return true;
+        }
+        const startDate = dateFilter.startDate ? new Date(dateFilter.startDate) : null;
+        const endDate = dateFilter.endDate ? new Date(dateFilter.endDate) : null;
+
+        // Set time to end of day for end date to include the entire day
+        if (endDate) {
+          endDate.setHours(23, 59, 59, 999);
+        }
+
+        if (startDate && endDate) {
+          return orderDate >= startDate && orderDate <= endDate;
+        } else if (startDate) {
+          return orderDate >= startDate;
+        } else if (endDate) {
+          return orderDate <= endDate;
+        }
+        return true;
+
+      default:
+        return true;
+    }
+  });
+
+  const clearDateFilter = () => {
+    setDateFilter({
+      type: 'all',
+      startDate: "",
+      endDate: ""
+    });
+  };
+
+  const handleDateFilterChange = (field: 'startDate' | 'endDate', value: string) => {
+    setDateFilter(prev => ({
+      ...prev,
+      type: 'custom',
+      [field]: value
+    }));
+  };
+
+  const setDateFilterType = (type: 'all' | 'today' | 'yesterday' | 'last7days' | 'last30days' | 'custom') => {
+    setDateFilter(prev => ({
+      ...prev,
+      type
+    }));
+  };
+
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     product.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -550,13 +643,139 @@ export default function AdminPage() {
           </TabsContent>
 
           <TabsContent value="orders" className="space-y-6">
+            {/* Orders Header with Date Filter */}
+            <div className="flex flex-col gap-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-bold">Orders Management</h2>
+                  <p className="text-muted-foreground">
+                    {filteredOrders.length} of {orders.length} orders
+                    {dateFilter.type !== 'all' && (
+                      <span className="ml-2 text-sm text-blue-600">
+                        (filtered by date)
+                      </span>
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              {/* Date Filter */}
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium mb-3 block">Filter Orders by Date</label>
+                      
+                      {/* Quick Filter Buttons */}
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        <Button
+                          variant={dateFilter.type === 'all' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setDateFilterType('all')}
+                        >
+                          All Orders
+                        </Button>
+                        <Button
+                          variant={dateFilter.type === 'today' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setDateFilterType('today')}
+                        >
+                          Today
+                        </Button>
+                        <Button
+                          variant={dateFilter.type === 'yesterday' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setDateFilterType('yesterday')}
+                        >
+                          Yesterday
+                        </Button>
+                        <Button
+                          variant={dateFilter.type === 'last7days' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setDateFilterType('last7days')}
+                        >
+                          Last 7 Days
+                        </Button>
+                        <Button
+                          variant={dateFilter.type === 'last30days' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setDateFilterType('last30days')}
+                        >
+                          Last 30 Days
+                        </Button>
+                        <Button
+                          variant={dateFilter.type === 'custom' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setDateFilterType('custom')}
+                        >
+                          Custom Range
+                        </Button>
+                      </div>
+
+                      {/* Custom Date Range (only show when custom is selected) */}
+                      {dateFilter.type === 'custom' && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="relative">
+                            <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                            <Input
+                              type="date"
+                              value={dateFilter.startDate}
+                              onChange={(e) => handleDateFilterChange('startDate', e.target.value)}
+                              className="pl-10"
+                              placeholder="Start date"
+                            />
+                          </div>
+                          <div className="relative">
+                            <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                            <Input
+                              type="date"
+                              value={dateFilter.endDate}
+                              onChange={(e) => handleDateFilterChange('endDate', e.target.value)}
+                              className="pl-10"
+                              placeholder="End date"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Active Filter Info */}
+                      {dateFilter.type !== 'all' && (
+                        <div className="flex items-center justify-between mt-3 p-2 bg-muted/50 rounded-lg">
+                          <div className="text-sm text-muted-foreground">
+                            {dateFilter.type === 'today' && 'Showing orders from today'}
+                            {dateFilter.type === 'yesterday' && 'Showing orders from yesterday'}
+                            {dateFilter.type === 'last7days' && 'Showing orders from last 7 days'}
+                            {dateFilter.type === 'last30days' && 'Showing orders from last 30 days'}
+                            {dateFilter.type === 'custom' && (
+                              dateFilter.startDate || dateFilter.endDate 
+                                ? `Showing orders from ${dateFilter.startDate || 'beginning'} to ${dateFilter.endDate || 'today'}`
+                                : 'Select a date range'
+                            )}
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={clearDateFilter}
+                            className="flex items-center gap-1 text-xs"
+                          >
+                            <X className="w-3 h-3" />
+                            Clear
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
             <div className="grid gap-6">
-              {orders.map((order) => (
+              {filteredOrders.map((order) => (
                 <Card key={order.id}>
                   <CardHeader>
                     <div className="flex justify-between items-start">
                       <div>
-                        <CardTitle className="text-lg">Order #{order.id.slice(-8)}</CardTitle>
+                        <CardTitle className="text-lg">Order #{order.id}</CardTitle>
                         <CardDescription>
                           {order.user.name || order.user.email} • {new Date(order.createdAt).toLocaleDateString()}
                         </CardDescription>
@@ -671,6 +890,32 @@ export default function AdminPage() {
                 </Card>
               ))}
             </div>
+
+            {/* Empty State for Orders */}
+            {filteredOrders.length === 0 && (
+              <Card>
+                <CardContent className="pt-12 pb-12">
+                  <div className="text-center">
+                    <ShoppingCart className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-medium mb-2">
+                      {dateFilter.type !== 'all' ? "No orders found for selected filter" : "No orders yet"}
+                    </h3>
+                    <p className="text-muted-foreground mb-4">
+                      {dateFilter.type !== 'all'
+                        ? "Try adjusting your filter or clear the filter to see all orders" 
+                        : "Orders will appear here once customers start placing them"
+                      }
+                    </p>
+                    {dateFilter.type !== 'all' && (
+                      <Button onClick={clearDateFilter} variant="outline" className="flex items-center gap-2">
+                        <X className="w-4 h-4" />
+                        Clear Filter
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6">

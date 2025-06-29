@@ -241,7 +241,7 @@ export default function CheckoutPage() {
       if (res.ok) {
         const order = await res.json();
         setCheckoutSuccess(true);
-        toast.success(`Order placed successfully! Order #${order.id.slice(-8)}`);
+        toast.success(`Order placed successfully! Order #${order.id}`);
         clearCart();
         window.dispatchEvent(new Event("cart-updated"));
         router.push(`/orders/${order.id}`);
@@ -262,7 +262,7 @@ export default function CheckoutPage() {
 
   if (loading || status === "loading") {
     return (
-      <main className="flex flex-col items-center py-12 px-4 min-h-screen">
+      <main className="flex flex-col items-center px-4 min-h-screen">
         <div className="text-center">
           <div className="text-lg">Loading checkout...</div>
         </div>
@@ -272,7 +272,7 @@ export default function CheckoutPage() {
 
   if (cart.length === 0 && !checkoutSuccess) {
     return (
-      <main className="flex flex-col items-center py-12 px-4 min-h-screen">
+      <main className="flex flex-col items-center px-4 min-h-screen">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Checkout</h1>
           <p className="text-muted-foreground mb-4">Your cart is empty.</p>
@@ -291,7 +291,7 @@ export default function CheckoutPage() {
 
   if (checkoutSuccess) {
     return (
-      <main className="flex flex-col items-center py-12 px-4 min-h-screen">
+      <main className="flex flex-col items-center px-4 min-h-screen">
         <div className="text-center">
           <div className="text-lg">Redirecting to order details...</div>
         </div>
@@ -302,7 +302,7 @@ export default function CheckoutPage() {
   // Show auth forms for guest users
   if (showAuth) {
     return (
-      <main className="flex flex-col items-center py-12 px-4 min-h-screen">
+      <main className="flex flex-col items-center px-4 min-h-screen">
         <div className="w-full max-w-md">
           <h1 className="text-3xl font-bold mb-8 text-center">Complete Your Order</h1>
           
@@ -423,7 +423,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <main className="flex flex-col items-center py-12 px-4 min-h-screen">
+    <main className="flex flex-col items-center px-4 min-h-screen">
       <div className="w-full max-w-6xl">
         <h1 className="text-3xl font-bold mb-8 text-center">Checkout</h1>
         

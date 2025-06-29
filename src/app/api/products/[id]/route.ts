@@ -24,9 +24,40 @@ export async function PUT(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const id = req.nextUrl.pathname.split("/").pop();
-    const deleted = await prisma.product.delete({ where: { id } });
-    return NextResponse.json(deleted);
-  } catch {
-    return NextResponse.json({ error: 'Failed to delete product' }, { status: 500 });
+    
+    if (!id) {
+      return NextResponse.json({ error: 'Product ID is required' }, { status: 400 });
+    }
+
+    // Check if product exists first
+    const existingProduct = await prisma.product.findUnique({
+      where: { id },
+      include: {
+        orderItems: true
+      }
+    });
+
+    if (!existingProduct) {
+      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+    }
+
+    // Delete the product (order items will be cascaded due to schema update)
+    const deleted = await prisma.product.delete({ 
+      where: { id },
+      include: {
+        orderItems: true
+      }
+    });
+    
+    return NextResponse.json({ 
+      message: 'Product deleted successfully',
+      deletedProduct: deleted 
+    });
+  } catch (error) {
+    console.error('Error deleting product:', error);
+    return NextResponse.json({ 
+      error: 'Failed to delete product',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 } 

@@ -108,7 +108,7 @@ export default function CartPage() {
 
   if (loading) {
     return (
-      <main className="flex flex-col items-center py-12 px-4 min-h-screen">
+      <main className="flex flex-col items-center px-4 min-h-screen">
         <div className="text-center">
           <p className="text-red-600 mb-4">Error loading cart: {loading}</p>
           <Button onClick={() => refreshCart()}>Retry</Button>
@@ -118,7 +118,7 @@ export default function CartPage() {
   }
 
   return (
-    <main className="flex flex-col items-center py-12 px-4 min-h-screen">
+    <main className="flex flex-col items-center px-4 min-h-screen">
       <h1 className="text-2xl font-bold mb-6">My Cart</h1>
       {loading ? (
         <div className="w-full max-w-4xl space-y-6">

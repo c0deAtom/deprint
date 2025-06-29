@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { generateOrderId } from "@/lib/orderId";
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -27,9 +28,13 @@ export async function POST(req: NextRequest) {
     const shipping = 80;
     const grandTotal = totalAmount + shipping;
 
+    // Generate custom order ID
+    const orderId = await generateOrderId();
+
     // Create the order
     const confirmedOrder = await prisma.order.create({
       data: {
+        id: orderId,
         userId,
         status: "CONFIRMED",
         total: grandTotal,

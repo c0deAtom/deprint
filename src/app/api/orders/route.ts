@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import type { Prisma } from "@prisma/client";
 import { OrderStatus } from "@prisma/client";
+import { generateOrderId } from "@/lib/orderId";
 
 export async function GET(req: NextRequest) {
   try {
@@ -94,9 +95,13 @@ export async function POST(req: NextRequest) {
       sum + (item.price * item.quantity), 0
     );
 
+    // Generate custom order ID
+    const orderId = await generateOrderId();
+
     // Create the order
     const order = await prisma.order.create({
       data: {
+        id: orderId,
         userId,
         status: "PENDING",
         total,

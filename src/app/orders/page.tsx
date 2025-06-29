@@ -129,7 +129,7 @@ export default function OrdersPage() {
 
   if (status === "loading" || loading) {
     return (
-      <main className="flex flex-col items-center py-12 px-4 min-h-screen">
+      <main className="flex flex-col items-center px-4 min-h-screen">
         <div className="w-full max-w-4xl">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold mb-2">My Orders</h1>
@@ -145,7 +145,7 @@ export default function OrdersPage() {
   }
 
   return (
-    <main className="flex flex-col items-center py-12 px-4 min-h-screen">
+    <main className="flex flex-col items-center px-4 min-h-screen">
       <div className="w-full max-w-4xl">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold mb-2">My Orders</h1>
@@ -201,7 +201,7 @@ export default function OrdersPage() {
                   <CardHeader className="pb-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <CardTitle className="text-lg">Order #{order.id.slice(-8)}</CardTitle>
+                        <CardTitle className="text-lg">Order #{order.id}</CardTitle>
                         <CardDescription className="flex items-center gap-2 mt-1">
                           <Calendar className="h-4 w-4" />
                           {new Date(order.createdAt).toLocaleDateString('en-US', {

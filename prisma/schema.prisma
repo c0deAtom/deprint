@@ -67,7 +67,7 @@ model Product {
 }
 
 model Order {
-  id              String      @id @default(cuid())
+  id              String      @id
   userId          String?
   status          OrderStatus @default(PENDING)
   total           Float
@@ -85,7 +85,7 @@ model OrderItem {
   quantity  Int
   price     Float
   order     Order   @relation(fields: [orderId], references: [id])
-  product   Product @relation(fields: [productId], references: [id])
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 model Admin {

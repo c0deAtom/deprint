@@ -267,7 +267,7 @@ export default function ProfilePage() {
 
   if (status === "loading") {
     return (
-      <main className="flex flex-col items-center py-12 px-4 min-h-screen">
+      <main className="flex flex-col items-center px-4 min-h-screen">
         <div className="w-full max-w-4xl">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold mb-2">Profile</h1>
@@ -283,7 +283,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <main className="flex flex-col items-center py-12 px-4 min-h-screen">
+    <main className="flex flex-col items-center px-4 min-h-screen">
       <div className="w-full max-w-4xl">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold mb-2">My Account</h1>
