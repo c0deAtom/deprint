@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, User, Menu, X, LogOut, Package } from "lucide-react";
-import { useCartBackend } from "@/hooks/useCartBackend";
+import { useCart } from '@/hooks/useCart';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,7 +17,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export default function Navbar() {
   const { data: session } = useSession();
-  const { getCartCount } = useCartBackend();
+  const { getCartCount } = useCart();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const cartCount = getCartCount();

@@ -9,14 +9,7 @@ import { toast } from "sonner";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-
-interface CartProduct {
-  id: string;
-  name: string;
-  price: number;
-  quantity: number;
-  imageUrls?: string[];
-}
+import { useCart } from "@/hooks/useCart";
 
 interface CheckoutForm {
   name: string;
@@ -30,7 +23,7 @@ interface CheckoutForm {
 export default function CheckoutPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [cart, setCart] = useState<CartProduct[]>([]);
+  const { items: cart, clearCart } = useCart();
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [form, setForm] = useState<CheckoutForm>({
@@ -54,39 +47,16 @@ export default function CheckoutPage() {
       return;
     }
 
-    const fetchCart = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch("/api/cart?allPending=1");
-        const data = await res.json();
-        const allItems = (Array.isArray(data) ? data : [data])
-          .flatMap((order: { items: { productId: string; product?: { name?: string; imageUrls?: string[] }; price: number; quantity?: number }[] }) =>
-            (order.items || []).map((item: { productId: string; product?: { name?: string; imageUrls?: string[] }; price: number; quantity?: number }) => ({
-              id: item.productId,
-              name: item.product?.name || "Unknown Product",
-              price: item.price,
-              quantity: item.quantity || 1,
-              imageUrls: item.product?.imageUrls,
-            }))
-          );
-        setCart(allItems);
-        
-        // Pre-fill form with user data
-        if (session?.user) {
-          setForm(prev => ({
-            ...prev,
-            name: session.user?.name || "",
-            email: session.user?.email || "",
-          }));
-        }
-      } catch (error) {
-        console.error("Error fetching cart:", error);
-        toast.error("Failed to load cart");
-      }
-      setLoading(false);
-    };
+    // Pre-fill form with user data
+    if (session?.user) {
+      setForm(prev => ({
+        ...prev,
+        name: session.user?.name || "",
+        email: session.user?.email || "",
+      }));
+    }
 
-    fetchCart();
+    setLoading(false);
   }, [session, status, router]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -95,23 +65,19 @@ export default function CheckoutPage() {
 
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!session?.user) {
       toast.error("Please sign in to checkout");
       return;
     }
-
     if (cart.length === 0) {
       toast.error("Your cart is empty");
       return;
     }
-
     // Validate form
     if (!form.name || !form.email || !form.address || !form.city || !form.zipCode || !form.phone) {
       toast.error("Please fill in all required fields");
       return;
     }
-
     setCheckoutLoading(true);
     try {
       const res = await fetch("/api/checkout", {
@@ -119,13 +85,19 @@ export default function CheckoutPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           shippingInfo: form,
+          items: cart.map(item => ({
+            productId: item.id,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            imageUrls: Array.isArray(item.imageUrls) ? item.imageUrls.filter((url): url is string => typeof url === 'string') : undefined,
+          })),
         }),
       });
-
       if (res.ok) {
         const order = await res.json();
         toast.success(`Order placed successfully! Order #${order.id.slice(-8)}`);
-        setCart([]);
+        clearCart();
         window.dispatchEvent(new Event("cart-updated"));
         router.push(`/orders/${order.id}`);
       } else {
@@ -272,7 +244,7 @@ export default function CheckoutPage() {
                     <div key={item.id} className="flex items-center gap-4 p-3 border rounded-lg">
                       {Array.isArray(item.imageUrls) && item.imageUrls.length > 0 && (
                         <Image
-                          src={item.imageUrls[0]}
+                          src={item.imageUrls[0] as string}
                           alt={item.name}
                           width={64}
                           height={64}

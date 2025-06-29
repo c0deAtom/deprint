@@ -4,7 +4,6 @@ import "./globals.css";
 import { ReactNode } from "react";
 import ConditionalNavbar from "@/components/ConditionalNavbar";
 import Providers from "./providers";
-import CartMergeOnSignIn from "@/components/CartMergeOnSignIn";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,7 +31,6 @@ export default async function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Providers>
-          <CartMergeOnSignIn />
           <ConditionalNavbar />
           {children}
         </Providers>

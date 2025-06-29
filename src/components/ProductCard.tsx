@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { JsonValue } from "@prisma/client/runtime/library";
 import BuyNowButton from "@/components/BuyNowButton";
-import CartItemBackend from "@/components/CartItemBackend";
+import CartItem from "@/components/CartItem";
 
 interface ProductCardProps {
   product: {
@@ -79,7 +79,7 @@ export default function ProductCard({ product, className }: ProductCardProps) {
         </div>
       </Link>
       <div className="flex gap-2 w-full mt-auto">
-        <div className="flex-1"><CartItemBackend productId={product.id} /></div>
+        <div className="flex-1"><CartItem product={product} /></div>
         <div className="flex-1"><BuyNowButton product={product} /></div>
       </div>
     </Card>

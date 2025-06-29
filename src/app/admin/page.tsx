@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import ProductImageCarousel from "@/components/ProductImageCarousel";
-import { Package, ShoppingCart, DollarSign, LogOut, User } from "lucide-react";
+import { Package, ShoppingCart, LogOut, User } from "lucide-react";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 
 interface Product {
@@ -33,6 +33,14 @@ interface Order {
   total: number;
   createdAt: string;
   items: OrderItem[];
+  shippingAddress?: {
+    name: string;
+    address: string;
+    city: string;
+    zipCode: string;
+    phone: string;
+    email: string;
+  };
 }
 
 interface OrderItem {
@@ -372,7 +380,6 @@ export default function AdminPage() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                  <DollarSign className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">₹{stats.totalRevenue.toFixed(2)}</div>
@@ -408,7 +415,7 @@ export default function AdminPage() {
                         step="0.01"
                         value={form.price}
                         onChange={handleChange}
-                        placeholder="0.00"
+                        placeholder="₹0.00"
                         required
                       />
                     </div>
@@ -545,6 +552,25 @@ export default function AdminPage() {
                           ))}
                         </div>
                       </div>
+                      {order.shippingAddress && (
+                        <div className="mb-2">
+                          <h4 className="font-medium">Shipping Address</h4>
+                          <div className="text-sm text-muted-foreground whitespace-pre-line">
+                            {typeof order.shippingAddress === 'object'
+                              ? [
+                                  order.shippingAddress.name,
+                                  order.shippingAddress.address,
+                                  order.shippingAddress.city,
+                                  order.shippingAddress.zipCode,
+                                  order.shippingAddress.phone,
+                                  order.shippingAddress.email,
+                                ]
+                                  .filter(Boolean)
+                                  .join(', ')
+                              : String(order.shippingAddress)}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -591,6 +617,7 @@ export default function AdminPage() {
                   step="0.01"
                   value={editForm.price}
                   onChange={handleEditChange}
+                  placeholder="₹0.00"
                   required
                 />
               </div>

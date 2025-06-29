@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Package, Calendar, DollarSign, Eye, ShoppingBag, Filter, ChevronLeft, ChevronRight } from "lucide-react";
+import { Package, Calendar, Eye, ShoppingBag, Filter, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -223,8 +223,7 @@ export default function OrdersPage() {
                         </Badge>
                         <div className="text-right">
                           <div className="flex items-center gap-1 text-lg font-bold">
-                            <DollarSign className="h-4 w-4" />
-                            {order.total.toFixed(2)}
+                            ₹{order.total.toFixed(2)}
                           </div>
                           <p className="text-xs text-muted-foreground">
                             {order.items.length} item{order.items.length !== 1 ? 's' : ''}
@@ -250,7 +249,7 @@ export default function OrdersPage() {
                             <div className="flex-1 min-w-0">
                               <p className="font-medium text-sm truncate">{item.product.name}</p>
                               <p className="text-xs text-muted-foreground">
-                                Qty: {item.quantity} × ${item.price.toFixed(2)}
+                                Qty: {item.quantity} × ₹{item.price.toFixed(2)}
                               </p>
                             </div>
                           </div>

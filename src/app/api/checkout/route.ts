@@ -10,58 +10,43 @@ export async function POST(req: NextRequest) {
   }
 
   const userId = session.user.id;
-  await req.json(); // Just consume the request body, we don't need shippingInfo for now
+  const body = await req.json();
+  const shippingInfo = body.shippingInfo;
+  const items = body.items;
+
+  if (!Array.isArray(items) || items.length === 0) {
+    return NextResponse.json({ error: "No items in cart" }, { status: 400 });
+  }
 
   try {
-    // Find all pending orders for this user
-    const pendingOrders = await prisma.order.findMany({
-      where: { userId, status: "PENDING" },
-      include: { items: { include: { product: true } } },
-    });
-
-    if (pendingOrders.length === 0) {
-      return NextResponse.json({ error: "No items in cart" }, { status: 400 });
-    }
-
-    // Calculate total for all orders
+    // Calculate total
     let totalAmount = 0;
-    for (const order of pendingOrders) {
-      const orderTotal = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-      totalAmount += orderTotal;
+    for (const item of items) {
+      totalAmount += item.price * item.quantity;
     }
-
-    // Add shipping and tax
     const shipping = 5.99;
     const tax = totalAmount * 0.08;
     const grandTotal = totalAmount + shipping + tax;
 
-    // Create a new confirmed order with all items
+    // Create the order
     const confirmedOrder = await prisma.order.create({
       data: {
         userId,
         status: "CONFIRMED",
         total: grandTotal,
+        shippingAddress: shippingInfo,
         items: {
-          create: pendingOrders.flatMap(order =>
-            order.items.map(item => ({
-              productId: item.productId,
-              quantity: item.quantity,
-              price: item.price,
-            }))
-          ),
+          create: items.map(item => ({
+            productId: item.productId,
+            quantity: item.quantity,
+            price: item.price,
+          })),
         },
-        // Store shipping info in a JSON field (you might want to add this to your schema)
-        // For now, we'll just create the order
       },
       include: {
         items: { include: { product: true } },
         user: { select: { email: true, name: true } },
       },
-    });
-
-    // Delete all pending orders
-    await prisma.order.deleteMany({
-      where: { userId, status: "PENDING" },
     });
 
     return NextResponse.json(confirmedOrder);

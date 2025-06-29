@@ -138,12 +138,12 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                             Quantity: {item.quantity}
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            Price: ${item.price.toFixed(2)} each
+                            Price: ₹{item.price.toFixed(2)} each
                           </p>
                         </div>
                         <div className="text-right">
                           <p className="font-medium">
-                            ${(item.price * item.quantity).toFixed(2)}
+                            ₹{(item.price * item.quantity).toFixed(2)}
                           </p>
                         </div>
                       </div>
@@ -163,7 +163,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span>Subtotal</span>
-                    <span>${order.total.toFixed(2)}</span>
+                    <span>₹{order.total.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Shipping</span>
@@ -172,7 +172,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                   <Separator />
                   <div className="flex justify-between font-bold text-lg">
                     <span>Total</span>
-                    <span>${order.total.toFixed(2)}</span>
+                    <span>₹{order.total.toFixed(2)}</span>
                   </div>
                 </div>
               </CardContent>

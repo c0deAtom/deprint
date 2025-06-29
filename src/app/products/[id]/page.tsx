@@ -33,7 +33,7 @@ export default async function Page({
               {product.category}
             </Badge>
           )}
-          <div className="text-2xl font-semibold text-green-700 mb-4 text-center md:text-left">${product.price.toFixed(2)}</div>
+          <div className="text-2xl font-semibold text-green-700 mb-4 text-center md:text-left">₹{product.price.toFixed(2)}</div>
           {product.description && <p className="text-muted-foreground mb-6 text-center md:text-left text-base leading-relaxed">{product.description}</p>}
           <div className="flex gap-4 w-full mt-2">
             <div className="flex-1"><CartItemClientWrapper product={product} /></div>

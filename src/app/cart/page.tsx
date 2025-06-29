@@ -7,20 +7,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import Image from "next/image";
 import Link from "next/link";
-import { useCartBackend } from "@/hooks/useCartBackend";
+import { useCart } from "@/hooks/useCart";
 import { Trash2, Loader2, ShoppingCart } from "lucide-react";
 import { CartItemSkeletonList } from "@/components/CartItemSkeleton";
 
 export default function CartPage() {
   const { data: session } = useSession();
-  const { 
-    cartItems, 
-    loading, 
-    error,
-    removeFromCart,
-    getCartTotal,
-    refreshCartDetails
-  } = useCartBackend();
+  const { items: cartItems, loading, refreshCart, removeFromCart, removeMultipleFromCart } = useCart();
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [removingItems, setRemovingItems] = useState<Set<string>>(new Set());
@@ -28,10 +21,8 @@ export default function CartPage() {
 
   // Load cart details when component mounts
   useEffect(() => {
-    if (session?.user) {
-      refreshCartDetails();
-    }
-  }, [session?.user, refreshCartDetails]);
+    refreshCart();
+  }, [refreshCart]);
 
   const handleItemToggle = (productId: string) => {
     const newSelected = new Set(selectedItems);
@@ -47,7 +38,7 @@ export default function CartPage() {
     if (selectedItems.size === cartItems.length) {
       setSelectedItems(new Set());
     } else {
-      setSelectedItems(new Set(cartItems.map(item => item.productId)));
+      setSelectedItems(new Set(cartItems.map(item => item.id)));
     }
   };
 
@@ -55,11 +46,9 @@ export default function CartPage() {
     setRemovingItems(prev => new Set(prev).add(productId));
     try {
       await removeFromCart(productId);
-      // Optimistic update - item is already removed from cartItems
       toast.success('Item removed from cart!');
     } catch {
       toast.error('Failed to remove item');
-      // Error handling is done in the hook with revert
     } finally {
       setRemovingItems(prev => {
         const newSet = new Set(prev);
@@ -71,13 +60,9 @@ export default function CartPage() {
 
   const handleBulkRemove = async () => {
     if (selectedItems.size === 0) return;
-    
     setBulkRemoving(true);
     try {
-      // Remove items one by one (could be optimized with batch endpoint)
-      for (const productId of selectedItems) {
-        await removeFromCart(productId);
-      }
+      await removeMultipleFromCart(Array.from(selectedItems));
       setSelectedItems(new Set());
       toast.success(`Removed ${selectedItems.size} item${selectedItems.size > 1 ? 's' : ''} from cart!`);
     } catch {
@@ -104,7 +89,7 @@ export default function CartPage() {
         const order = await res.json();
         toast.success(`Order placed successfully! Order #${order.id.slice(-8)}`);
         // Refresh cart details
-        await refreshCartDetails();
+        await refreshCart();
       } else {
         toast.error("Checkout failed");
       }
@@ -114,17 +99,17 @@ export default function CartPage() {
     setCheckoutLoading(false);
   };
 
-  const total = getCartTotal();
+  const total = cartItems.reduce((sum: number, item) => sum + (item.price * item.quantity), 0);
   const selectedTotal = cartItems
-    .filter(item => selectedItems.has(item.productId))
-    .reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    .filter(item => selectedItems.has(item.id))
+    .reduce((sum: number, item) => sum + (item.price * item.quantity), 0);
 
-  if (error) {
+  if (loading) {
     return (
       <main className="flex flex-col items-center py-12 px-4 min-h-screen">
         <div className="text-center">
-          <p className="text-red-600 mb-4">Error loading cart: {error}</p>
-          <Button onClick={() => refreshCartDetails()}>Retry</Button>
+          <p className="text-red-600 mb-4">Error loading cart: {loading}</p>
+          <Button onClick={() => refreshCart()}>Retry</Button>
         </div>
       </main>
     );
@@ -225,36 +210,33 @@ export default function CartPage() {
 
           {/* Cart Items */}
           <div className="grid grid-cols-1 gap-6">
-            {cartItems.map(item => (
+            {cartItems.map((item) => (
               <Card key={item.id} className="p-4">
                 <div className="flex gap-4">
                   <div className="flex items-start space-x-3">
                     <Checkbox
-                      id={`cart-item-${item.productId}`}
-                      checked={selectedItems.has(item.productId)}
-                      onCheckedChange={() => handleItemToggle(item.productId)}
-                      disabled={loading || removingItems.has(item.productId)}
+                      id={`cart-item-${item.id}`}
+                      checked={selectedItems.has(item.id)}
+                      onCheckedChange={() => handleItemToggle(item.id)}
+                      disabled={loading || removingItems.has(item.id)}
                     />
                   </div>
                   
                   <div className="relative w-24 h-24 flex-shrink-0">
-                    {item.product.imageUrls && Array.isArray(item.product.imageUrls) && item.product.imageUrls.length > 0 ? (
+                    {Array.isArray(item.imageUrls) && typeof item.imageUrls[0] === 'string' && item.imageUrls[0] && (
                       <Image
-                        src={item.product.imageUrls[0] as string}
-                        alt={item.product.name}
-                        fill
-                        className="object-cover rounded-md"
+                        src={item.imageUrls[0]}
+                        alt={item.name}
+                        width={64}
+                        height={64}
+                        className="object-contain rounded"
                       />
-                    ) : (
-                      <div className="w-full h-full bg-gray-200 rounded-md flex items-center justify-center text-gray-500 text-sm">
-                        No Image
-                      </div>
                     )}
                   </div>
                   
                   <div className="flex-1 flex flex-col justify-between">
                     <div>
-                      <h3 className="font-semibold text-lg mb-2">{item.product.name}</h3>
+                      <h3 className="font-semibold text-lg mb-2">{item.name}</h3>
                       <div className="text-lg font-medium text-green-600 mb-2">
                         ₹{item.price.toFixed(2)}
                       </div>
@@ -270,10 +252,10 @@ export default function CartPage() {
                       <Button 
                         variant="destructive" 
                         size="sm" 
-                        onClick={() => handleRemoveItem(item.productId)}
-                        disabled={removingItems.has(item.productId) || loading || bulkRemoving}
+                        onClick={() => handleRemoveItem(item.id)}
+                        disabled={removingItems.has(item.id) || loading || bulkRemoving}
                       >
-                        {removingItems.has(item.productId) ? (
+                        {removingItems.has(item.id) ? (
                           <>
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                             Removing...
