@@ -35,6 +35,12 @@ export default function ProfilePage() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
+  // Local state for displaying user data (will be updated immediately)
+  const [localUserData, setLocalUserData] = useState<{ name: string; email: string }>({
+    name: "",
+    email: "",
+  });
+  
   const [profileForm, setProfileForm] = useState<ProfileForm>({
     name: "",
     email: "",
@@ -55,10 +61,12 @@ export default function ProfilePage() {
       router.push("/auth/signin");
       return;
     }
-    setProfileForm({
+    const userData = {
       name: session.user?.name || "",
       email: session.user?.email || "",
-    });
+    };
+    setLocalUserData(userData);
+    setProfileForm(userData);
   }, [session, status, router]);
 
   const handleProfileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -83,8 +91,16 @@ export default function ProfilePage() {
       if (res.ok) {
         setProfileMessage({ type: "success", text: "Profile updated successfully!" });
         setIsEditing(false);
-        // Refresh session to get updated user data
-        await signIn("credentials", { redirect: false });
+        
+        // Update local state immediately for instant UI feedback
+        if (data.user) {
+          const updatedUserData = {
+            name: data.user.name,
+            email: data.user.email,
+          };
+          setLocalUserData(updatedUserData);
+          setProfileForm(updatedUserData);
+        }
       } else {
         setProfileMessage({ type: "error", text: data.error || "Failed to update profile" });
       }
@@ -144,8 +160,8 @@ export default function ProfilePage() {
 
   const handleProfileCancel = () => {
     setProfileForm({
-      name: session?.user?.name || "",
-      email: session?.user?.email || "",
+      name: localUserData.name,
+      email: localUserData.email,
     });
     setIsEditing(false);
   };
@@ -259,7 +275,7 @@ export default function ProfilePage() {
                           placeholder="Enter your name"
                         />
                       ) : (
-                        <p className="text-sm font-medium">{session.user.name || "Not provided"}</p>
+                        <p className="text-sm font-medium">{localUserData.name || "Not provided"}</p>
                       )}
                     </div>
                   </div>
@@ -280,7 +296,7 @@ export default function ProfilePage() {
                           placeholder="Enter your email"
                         />
                       ) : (
-                        <p className="text-sm font-medium">{session.user.email}</p>
+                        <p className="text-sm font-medium">{localUserData.email}</p>
                       )}
                     </div>
                   </div>
