@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import Image from "next/image";
 import Link from "next/link";
-import { useCart } from "@/hooks/useCart";
+import { useCart } from "@/context/CartContext";
 
 interface CheckoutForm {
   name: string;

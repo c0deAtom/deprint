@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { CreditCard, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { JsonValue } from "@prisma/client/runtime/library";
-import { useCart } from "@/hooks/useCart";
+import { useCart } from "@/context/CartContext";
 
 interface Product {
   id: string;

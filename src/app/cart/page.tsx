@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import Image from "next/image";
 import Link from "next/link";
-import { useCart } from "@/hooks/useCart";
+import { useCart } from "@/context/CartContext";
 import { Trash2, Loader2, ShoppingCart } from "lucide-react";
 import { CartItemSkeletonList } from "@/components/CartItemSkeleton";
 

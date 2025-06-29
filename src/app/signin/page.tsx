@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Mail, Lock, User, ShoppingBag, CheckCircle, AlertCircle } from "lucide-react";
+import { ArrowLeft, Mail, Lock, User, ShoppingBag, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import Link from "next/link";
 
 export default function SignInPage() {
@@ -227,7 +227,11 @@ function SignInForm() {
                   className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300"
                   size="lg"
                 >
-                  {loading ? "Signing in..." : "Sign In"}
+                  {loading ? (
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin inline-block align-middle" /> Signing in...</>
+                  ) : (
+                    "Sign In"
+                  )}
                 </Button>
 
                 <div className="text-center">

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, User, Menu, X, LogOut, Package, Sidebar } from "lucide-react";
-import { useCart } from '@/hooks/useCart';
+import { useCart } from "@/context/CartContext";
 import {
   DropdownMenu,
   DropdownMenuContent,

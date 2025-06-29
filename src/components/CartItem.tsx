@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { JsonValue } from "@prisma/client/runtime/library";
-import { useCart } from "@/hooks/useCart";
+import { useCart } from "@/context/CartContext";
 
 interface Product {
   id: string;
