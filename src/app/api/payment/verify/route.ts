@@ -4,6 +4,14 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import crypto from "crypto";
 
+// Check if Razorpay credentials are configured
+const isRazorpayConfigured = () => {
+  return process.env.RAZORPAY_KEY_ID && 
+         process.env.RAZORPAY_KEY_SECRET && 
+         process.env.RAZORPAY_KEY_ID !== "rzp_test_your_test_key_id_here" &&
+         process.env.RAZORPAY_KEY_SECRET !== "your_test_key_secret_here";
+};
+
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -17,10 +25,17 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    // Check if Razorpay is configured
+    if (!isRazorpayConfigured()) {
+      return NextResponse.json({ 
+        error: "Payment gateway not configured. Please contact administrator." 
+      }, { status: 503 });
+    }
+
     // Verify the payment signature
     const body = razorpay_order_id + "|" + razorpay_payment_id;
     const expectedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET || "")
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET!)
       .update(body.toString())
       .digest("hex");
 
