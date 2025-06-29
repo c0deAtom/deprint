@@ -22,8 +22,15 @@ export async function GET(req: NextRequest) {
     
     const skip = (page - 1) * limit;
     
-    // Build where clause
-    const where: Prisma.OrderWhereInput = { userId };
+    // Build where clause - exclude PENDING orders by default
+    const where: Prisma.OrderWhereInput = { 
+      userId,
+      status: {
+        not: 'PENDING' // Exclude pending orders from order history
+      }
+    };
+    
+    // If a specific status is requested, override the filter
     if (status && status !== 'ALL') {
       where.status = status as OrderStatus;
     }

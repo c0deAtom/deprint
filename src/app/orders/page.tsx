@@ -163,7 +163,6 @@ export default function OrdersPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">All Orders</SelectItem>
-                <SelectItem value="PENDING">Pending</SelectItem>
                 <SelectItem value="CONFIRMED">Confirmed</SelectItem>
                 <SelectItem value="SHIPPED">Shipped</SelectItem>
                 <SelectItem value="DELIVERED">Delivered</SelectItem>
@@ -181,11 +180,11 @@ export default function OrdersPage() {
             <CardContent className="flex flex-col items-center py-12">
               <ShoppingBag className="h-16 w-16 text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">
-                {statusFilter === "ALL" ? "No orders yet" : `No ${statusFilter.toLowerCase()} orders`}
+                {statusFilter === "ALL" ? "No completed orders yet" : `No ${statusFilter.toLowerCase()} orders`}
               </h3>
               <p className="text-muted-foreground text-center mb-6">
                 {statusFilter === "ALL" 
-                  ? "Start shopping to see your orders here"
+                  ? "Complete a purchase to see your orders here. Items in your cart are not considered orders until checkout."
                   : `You don't have any ${statusFilter.toLowerCase()} orders`
                 }
               </p>

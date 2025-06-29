@@ -1,10 +1,11 @@
 "use client";
+
+import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
+import { CreditCard, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { useState } from "react";
 import { JsonValue } from "@prisma/client/runtime/library";
-import { Loader2, CreditCard } from "lucide-react";
 
 interface Product {
   id: string;
@@ -12,6 +13,7 @@ interface Product {
   description?: string | null;
   price: number;
   imageUrls?: JsonValue;
+  category?: string | null;
 }
 
 export default function BuyNowButton({ product }: { product: Product }) {
@@ -26,8 +28,8 @@ export default function BuyNowButton({ product }: { product: Product }) {
 
     setLoading(true);
     try {
-      // Create a direct order
-      const res = await fetch("/api/orders", {
+      // Create a direct CONFIRMED order (not PENDING)
+      const res = await fetch("/api/orders/buy-now", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -38,11 +40,14 @@ export default function BuyNowButton({ product }: { product: Product }) {
       if (res.ok) {
         const order = await res.json();
         toast.success(`Order placed successfully! Order #${order.id.slice(-8)}`);
+        // Refresh cart if needed
+        window.dispatchEvent(new Event("cart-updated"));
       } else {
-        toast.error("Purchase failed");
+        const error = await res.json();
+        toast.error(error.error || "Purchase failed");
       }
-    } catch {
-      console.error("Failed to create order");
+    } catch (error) {
+      console.error("Failed to create order:", error);
       toast.error("Purchase failed");
     }
     setLoading(false);
