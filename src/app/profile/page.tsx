@@ -38,7 +38,9 @@ export default function ProfilePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
+  const [isAddressEditing, setIsAddressEditing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("profile");
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -57,6 +59,14 @@ export default function ProfilePage() {
     address: { line1: "", state: "", city: "", pincode: "", mobile: "" },
   });
 
+  const [addressForm, setAddressForm] = useState<Address>({
+    line1: "",
+    state: "",
+    city: "",
+    pincode: "",
+    mobile: "",
+  });
+
   const [passwordForm, setPasswordForm] = useState<PasswordForm>({
     currentPassword: "",
     newPassword: "",
@@ -65,6 +75,7 @@ export default function ProfilePage() {
 
   const [passwordMessage, setPasswordMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [profileMessage, setProfileMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [addressMessage, setAddressMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -74,6 +85,7 @@ export default function ProfilePage() {
     }
     // Fetch user profile to get structured address
     const fetchProfile = async () => {
+      setProfileLoading(true);
       try {
         const res = await fetch("/api/profile");
         if (res.ok) {
@@ -85,6 +97,7 @@ export default function ProfilePage() {
           };
           setLocalUserData(userData);
           setProfileForm(userData);
+          setAddressForm(userData.address);
         }
       } catch {
         // fallback to session
@@ -95,6 +108,9 @@ export default function ProfilePage() {
         };
         setLocalUserData(userData);
         setProfileForm(userData);
+        setAddressForm(userData.address);
+      } finally {
+        setProfileLoading(false);
       }
     };
     fetchProfile();
@@ -106,14 +122,11 @@ export default function ProfilePage() {
   };
 
   const handleAddressInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setProfileForm({
-      ...profileForm,
-      address: {
-        ...profileForm.address,
-        [e.target.name]: e.target.value,
-      },
+    setAddressForm({
+      ...addressForm,
+      [e.target.name]: e.target.value,
     });
-    setProfileMessage(null);
+    setAddressMessage(null);
   };
 
   const handlePasswordInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -151,6 +164,48 @@ export default function ProfilePage() {
       setProfileMessage({ type: "error", text: "An error occurred while updating profile" });
     }
     setLoading(false);
+  };
+
+  const handleAddressSave = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: localUserData.name,
+          email: localUserData.email,
+          address: addressForm,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setAddressMessage({ type: "success", text: "Address updated successfully!" });
+        setIsAddressEditing(false);
+        
+        // Update local state immediately for instant UI feedback
+        if (data.user) {
+          const updatedUserData = {
+            name: data.user.name,
+            email: data.user.email,
+            address: data.user.address || { line1: "", state: "", city: "", pincode: "", mobile: "" },
+          };
+          setLocalUserData(updatedUserData);
+          setAddressForm(updatedUserData.address);
+        }
+      } else {
+        setAddressMessage({ type: "error", text: data.error || "Failed to update address" });
+      }
+    } catch {
+      setAddressMessage({ type: "error", text: "An error occurred while updating address" });
+    }
+    setLoading(false);
+  };
+
+  const handleAddressCancel = () => {
+    setAddressForm(localUserData.address);
+    setIsAddressEditing(false);
+    setAddressMessage(null);
   };
 
   const testSession = async () => {
@@ -236,10 +291,14 @@ export default function ProfilePage() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-8">
+          <TabsList className="grid w-full grid-cols-4 mb-8">
             <TabsTrigger value="profile" className="flex items-center gap-2">
               <User className="h-4 w-4" />
               Profile
+            </TabsTrigger>
+            <TabsTrigger value="address" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Address
             </TabsTrigger>
             <TabsTrigger value="security" className="flex items-center gap-2">
               <Lock className="h-4 w-4" />
@@ -319,7 +378,13 @@ export default function ProfilePage() {
                           placeholder="Enter your name"
                         />
                       ) : (
-                        <p className="text-sm font-medium">{localUserData.name || "Not provided"}</p>
+                        <p className="text-sm font-medium">
+                          {profileLoading ? (
+                            <span className="text-muted-foreground">Loading...</span>
+                          ) : (
+                            localUserData.name || "Not provided"
+                          )}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -340,7 +405,13 @@ export default function ProfilePage() {
                           placeholder="Enter your email"
                         />
                       ) : (
-                        <p className="text-sm font-medium">{localUserData.email}</p>
+                        <p className="text-sm font-medium">
+                          {profileLoading ? (
+                            <span className="text-muted-foreground">Loading...</span>
+                          ) : (
+                            localUserData.email
+                          )}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -356,78 +427,6 @@ export default function ProfilePage() {
                       </p>
                     </div>
                   </div>
-
-                  <Separator />
-
-                  <div className="flex items-center gap-3">
-                    <Settings className="h-5 w-5 text-muted-foreground" />
-                    <div className="flex-1">
-                      <Label>Address</Label>
-                      {isEditing ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="line1">Street / House</Label>
-                            <Input
-                              id="line1"
-                              name="line1"
-                              value={profileForm.address.line1}
-                              onChange={handleAddressInputChange}
-                              placeholder="Street, House No."
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="state">State</Label>
-                            <Input
-                              id="state"
-                              name="state"
-                              value={profileForm.address.state}
-                              onChange={handleAddressInputChange}
-                              placeholder="State"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="city">City</Label>
-                            <Input
-                              id="city"
-                              name="city"
-                              value={profileForm.address.city}
-                              onChange={handleAddressInputChange}
-                              placeholder="City"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="pincode">Pincode</Label>
-                            <Input
-                              id="pincode"
-                              name="pincode"
-                              value={profileForm.address.pincode}
-                              onChange={handleAddressInputChange}
-                              placeholder="Pincode"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="mobile">Mobile</Label>
-                            <Input
-                              id="mobile"
-                              name="mobile"
-                              value={profileForm.address.mobile}
-                              onChange={handleAddressInputChange}
-                              placeholder="Mobile Number"
-                            />
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-sm font-medium">
-                          {localUserData.address.line1 && <div>{localUserData.address.line1}</div>}
-                          {localUserData.address.city && <div>{localUserData.address.city}</div>}
-                          {localUserData.address.state && <div>{localUserData.address.state}</div>}
-                          {localUserData.address.pincode && <div>Pincode: {localUserData.address.pincode}</div>}
-                          {localUserData.address.mobile && <div>Mobile: {localUserData.address.mobile}</div>}
-                          {!localUserData.address.line1 && !localUserData.address.city && !localUserData.address.state && !localUserData.address.pincode && !localUserData.address.mobile && <div>Not provided</div>}
-                        </div>
-                      )}
-                    </div>
-                  </div>
                 </div>
                 {profileMessage && (
                   <div
@@ -436,6 +435,174 @@ export default function ProfilePage() {
                     }`}
                   >
                     {profileMessage.text}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Address Tab */}
+          <TabsContent value="address">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Address</CardTitle>
+                    <CardDescription>Update your address</CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    {!isAddressEditing ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsAddressEditing(true)}
+                        className="flex items-center gap-2"
+                      >
+                        <Edit className="h-4 w-4" />
+                        Edit
+                      </Button>
+                    ) : (
+                      <>
+                        <Button
+                          size="sm"
+                          onClick={handleAddressSave}
+                          disabled={loading}
+                          className="flex items-center gap-2"
+                        >
+                          <Save className="h-4 w-4" />
+                          {loading ? "Saving..." : "Save"}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleAddressCancel}
+                          className="flex items-center gap-2"
+                        >
+                          <X className="h-4 w-4" />
+                          Cancel
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <Package className="h-5 w-5 text-muted-foreground" />
+                    <div className="flex-1">
+                      <Label htmlFor="line1">Street / House</Label>
+                      {isAddressEditing ? (
+                        <Input
+                          id="line1"
+                          name="line1"
+                          value={addressForm.line1}
+                          onChange={handleAddressInputChange}
+                          placeholder="Street, House No."
+                        />
+                      ) : (
+                        <p className="text-sm font-medium">
+                          {localUserData.address.line1 || "Not provided"}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="flex items-center gap-3">
+                    <Package className="h-5 w-5 text-muted-foreground" />
+                    <div className="flex-1">
+                      <Label htmlFor="state">State</Label>
+                      {isAddressEditing ? (
+                        <Input
+                          id="state"
+                          name="state"
+                          value={addressForm.state}
+                          onChange={handleAddressInputChange}
+                          placeholder="State"
+                        />
+                      ) : (
+                        <p className="text-sm font-medium">
+                          {localUserData.address.state || "Not provided"}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="flex items-center gap-3">
+                    <Package className="h-5 w-5 text-muted-foreground" />
+                    <div className="flex-1">
+                      <Label htmlFor="city">City</Label>
+                      {isAddressEditing ? (
+                        <Input
+                          id="city"
+                          name="city"
+                          value={addressForm.city}
+                          onChange={handleAddressInputChange}
+                          placeholder="City"
+                        />
+                      ) : (
+                        <p className="text-sm font-medium">
+                          {localUserData.address.city || "Not provided"}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="flex items-center gap-3">
+                    <Package className="h-5 w-5 text-muted-foreground" />
+                    <div className="flex-1">
+                      <Label htmlFor="pincode">Pincode</Label>
+                      {isAddressEditing ? (
+                        <Input
+                          id="pincode"
+                          name="pincode"
+                          value={addressForm.pincode}
+                          onChange={handleAddressInputChange}
+                          placeholder="Pincode"
+                        />
+                      ) : (
+                        <p className="text-sm font-medium">
+                          {localUserData.address.pincode || "Not provided"}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="flex items-center gap-3">
+                    <Package className="h-5 w-5 text-muted-foreground" />
+                    <div className="flex-1">
+                      <Label htmlFor="mobile">Mobile</Label>
+                      {isAddressEditing ? (
+                        <Input
+                          id="mobile"
+                          name="mobile"
+                          value={addressForm.mobile}
+                          onChange={handleAddressInputChange}
+                          placeholder="Mobile Number"
+                        />
+                      ) : (
+                        <p className="text-sm font-medium">
+                          {localUserData.address.mobile || "Not provided"}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                {addressMessage && (
+                  <div
+                    className={`text-sm mb-2 ${
+                      addressMessage.type === "error" ? "text-red-600" : "text-green-600"
+                    }`}
+                  >
+                    {addressMessage.text}
                   </div>
                 )}
               </CardContent>

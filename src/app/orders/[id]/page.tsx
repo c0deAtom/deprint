@@ -192,11 +192,11 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
               <CardContent className="space-y-3">
                 <div>
                   <p className="text-sm text-muted-foreground">Name</p>
-                  <p className="font-medium">{order.user.name || "N/A"}</p>
+                  <p className="font-medium">{order.user?.name || "N/A"}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Email</p>
-                  <p className="font-medium">{order.user.email}</p>
+                  <p className="font-medium">{order.user?.email || "N/A"}</p>
                 </div>
               </CardContent>
             </Card>

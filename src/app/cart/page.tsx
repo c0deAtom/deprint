@@ -336,20 +336,16 @@ export default function CartPage() {
               <div className="flex gap-3">
                 <Button 
                   asChild
-                  disabled={!session?.user || loading || bulkRemoving}
+                  disabled={loading || bulkRemoving}
                   className="flex-1"
                   size="lg"
                 >
-                  {session?.user ? (
-                    <a href="/checkout">Checkout</a>
-                  ) : (
-                    <a href="/signin?callbackUrl=/cart">Sign in to Checkout</a>
-                  )}
+                  <a href="/checkout">Checkout</a>
                 </Button>
               </div>
               {!session?.user && (
                 <p className="text-sm text-muted-foreground text-center">
-                  Please sign in to complete your purchase
+                  You&apos;ll need to create an account or sign in to complete your purchase
                 </p>
               )}
             </div>

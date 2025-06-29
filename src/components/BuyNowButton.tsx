@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { CreditCard, Loader2 } from "lucide-react";
@@ -19,17 +18,11 @@ interface Product {
 }
 
 export default function BuyNowButton({ product }: { product: Product }) {
-  const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { addToCart, isInCart } = useCart();
 
   const handleBuyNow = async () => {
-    if (!session?.user) {
-      toast.error("Please sign in to purchase");
-      return;
-    }
-
     setLoading(true);
     try {
       // Check if product is already in cart
@@ -70,22 +63,17 @@ export default function BuyNowButton({ product }: { product: Product }) {
       size="lg"
       className="w-full transition-all duration-200 hover:scale-105"
       onClick={handleBuyNow}
-      disabled={loading || !session?.user}
+      disabled={loading}
     >
       {loading ? (
         <>
           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
           Buying...
         </>
-      ) : session?.user ? (
-        <>
-          <CreditCard className="w-4 h-4 mr-2" />
-          Buy Now
-        </>
       ) : (
         <>
           <CreditCard className="w-4 h-4 mr-2" />
-          Sign in to Buy
+          Buy Now
         </>
       )}
     </Button>

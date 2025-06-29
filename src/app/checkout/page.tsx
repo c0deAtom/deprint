@@ -1,13 +1,13 @@
 "use client";
-import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
+import { useState, useEffect } from "react";
+import { useSession, signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCart } from "@/hooks/useCart";
 
@@ -21,6 +21,13 @@ interface CheckoutForm {
   mobile: string;
 }
 
+interface AuthForm {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+}
+
 export default function CheckoutPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -30,6 +37,9 @@ export default function CheckoutPage() {
   const [addressLoading, setAddressLoading] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
   const [checkoutSuccess, setCheckoutSuccess] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(true);
+  const [authLoading, setAuthLoading] = useState(false);
   const [form, setForm] = useState<CheckoutForm>({
     name: "",
     email: "",
@@ -39,20 +49,27 @@ export default function CheckoutPage() {
     pincode: "",
     mobile: "",
   });
+  const [authForm, setAuthForm] = useState<AuthForm>({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
 
   useEffect(() => {
-    // Only redirect if session is definitely not available (not loading)
-    if (status === "unauthenticated") {
-      router.push("/signin?callbackUrl=/checkout");
-      return;
-    }
-
     // Don't proceed if session is still loading
     if (status === "loading") {
       return;
     }
 
-    // Pre-fill form with user data
+    // Show auth forms if user is not signed in
+    if (status === "unauthenticated") {
+      setShowAuth(true);
+      setLoading(false);
+      return;
+    }
+
+    // Pre-fill form with user data if signed in
     if (session?.user) {
       setForm(prev => ({
         ...prev,
@@ -98,6 +115,84 @@ export default function CheckoutPage() {
     // Hide validation errors when user starts typing
     if (showValidation && e.target.value.trim()) {
       setShowValidation(false);
+    }
+  };
+
+  const handleAuthInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAuthForm({ ...authForm, [e.target.name]: e.target.value });
+  };
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (authForm.password !== authForm.confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+    if (authForm.password.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+
+    setAuthLoading(true);
+    try {
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: authForm.name,
+          email: authForm.email,
+          password: authForm.password,
+        }),
+      });
+
+      if (res.ok) {
+        toast.success("Account created successfully! Signing you in...");
+        // Auto sign in after signup
+        const result = await signIn("credentials", {
+          email: authForm.email,
+          password: authForm.password,
+          redirect: false,
+        });
+        
+        if (result?.ok) {
+          toast.success("Welcome! You can now complete your checkout.");
+          setShowAuth(false);
+        } else {
+          toast.error("Account created but sign in failed. Please sign in manually.");
+        }
+      } else {
+        const error = await res.json();
+        toast.error(error.error || "Sign up failed");
+      }
+    } catch (error) {
+      console.error("Sign up error:", error);
+      toast.error("Sign up failed");
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthLoading(true);
+    try {
+      const result = await signIn("credentials", {
+        email: authForm.email,
+        password: authForm.password,
+        redirect: false,
+      });
+
+      if (result?.ok) {
+        toast.success("Signed in successfully!");
+        setShowAuth(false);
+      } else {
+        toast.error("Invalid email or password");
+      }
+    } catch (error) {
+      console.error("Sign in error:", error);
+      toast.error("Sign in failed");
+    } finally {
+      setAuthLoading(false);
     }
   };
 
@@ -199,6 +294,129 @@ export default function CheckoutPage() {
       <main className="flex flex-col items-center py-12 px-4 min-h-screen">
         <div className="text-center">
           <div className="text-lg">Redirecting to order details...</div>
+        </div>
+      </main>
+    );
+  }
+
+  // Show auth forms for guest users
+  if (showAuth) {
+    return (
+      <main className="flex flex-col items-center py-12 px-4 min-h-screen">
+        <div className="w-full max-w-md">
+          <h1 className="text-3xl font-bold mb-8 text-center">Complete Your Order</h1>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-center">
+                {isSignUp ? "Create Account" : "Sign In"}
+              </CardTitle>
+              <CardDescription className="text-center">
+                {isSignUp 
+                  ? "Create an account to complete your purchase and track your orders" 
+                  : "Sign in to your account to complete your purchase"
+                }
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={isSignUp ? handleSignUp : handleSignIn} className="space-y-4">
+                {isSignUp && (
+                  <div>
+                    <Label htmlFor="auth-name">Full Name *</Label>
+                    <Input
+                      id="auth-name"
+                      name="name"
+                      value={authForm.name}
+                      onChange={handleAuthInputChange}
+                      required
+                    />
+                  </div>
+                )}
+                
+                <div>
+                  <Label htmlFor="auth-email">Email *</Label>
+                  <Input
+                    id="auth-email"
+                    name="email"
+                    type="email"
+                    value={authForm.email}
+                    onChange={handleAuthInputChange}
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="auth-password">Password *</Label>
+                  <Input
+                    id="auth-password"
+                    name="password"
+                    type="password"
+                    value={authForm.password}
+                    onChange={handleAuthInputChange}
+                    required
+                  />
+                </div>
+                
+                {isSignUp && (
+                  <div>
+                    <Label htmlFor="auth-confirmPassword">Confirm Password *</Label>
+                    <Input
+                      id="auth-confirmPassword"
+                      name="confirmPassword"
+                      type="password"
+                      value={authForm.confirmPassword}
+                      onChange={handleAuthInputChange}
+                      required
+                    />
+                  </div>
+                )}
+                
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={authLoading}
+                >
+                  {authLoading ? "Processing..." : isSignUp ? "Create Account" : "Sign In"}
+                </Button>
+              </form>
+              
+              <div className="mt-4 text-center">
+                <Button
+                  variant="link"
+                  onClick={() => setIsSignUp(!isSignUp)}
+                  className="text-sm"
+                >
+                  {isSignUp 
+                    ? "Already have an account? Sign in" 
+                    : "Don't have an account? Sign up"
+                  }
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* Order Summary for context */}
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="text-lg">Order Summary</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Subtotal ({cart.length} items)</span>
+                  <span>₹{total.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Shipping</span>
+                  <span>₹{shipping.toFixed(2)}</span>
+                </div>
+                <div className="border-t pt-2 flex justify-between font-bold">
+                  <span>Total</span>
+                  <span>₹{grandTotal.toFixed(2)}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </main>
     );

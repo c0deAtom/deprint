@@ -68,13 +68,13 @@ model Product {
 
 model Order {
   id              String      @id @default(cuid())
-  userId          String
+  userId          String?
   status          OrderStatus @default(PENDING)
   total           Float
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
   shippingAddress Json?
-  user            User        @relation(fields: [userId], references: [id])
+  user            User?       @relation(fields: [userId], references: [id])
   items           OrderItem[]
 }
 
