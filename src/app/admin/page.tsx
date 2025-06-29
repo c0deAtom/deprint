@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import ProductImageCarousel from "@/components/ProductImageCarousel";
-import { Package, ShoppingCart, LogOut, User } from "lucide-react";
+import { Package, ShoppingCart, LogOut, User, Plus, Edit, Trash2, Search } from "lucide-react";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 
 interface Product {
@@ -85,6 +85,9 @@ export default function AdminPage() {
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [editForm, setEditForm] = useState({ name: "", description: "", price: "", category: "", imageUrls: "" });
   const [deleteProduct, setDeleteProduct] = useState<Product | null>(null);
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [productsLoading, setProductsLoading] = useState(false);
 
   // Predefined categories
   const categories = [
@@ -126,6 +129,7 @@ export default function AdminPage() {
   }, [fetchData, isAuthenticated]);
 
   const fetchProducts = async () => {
+    setProductsLoading(true);
     try {
       const token = localStorage.getItem("adminToken");
       const headers: Record<string, string> = {};
@@ -141,6 +145,8 @@ export default function AdminPage() {
       }
     } catch {
       toast.error("Error fetching products");
+    } finally {
+      setProductsLoading(false);
     }
   };
 
@@ -200,14 +206,13 @@ export default function AdminPage() {
         body: JSON.stringify({ ...form, price: parseFloat(form.price), imageUrls: imageUrlsArr }),
       });
       if (res.ok) {
-        const newProduct = await res.json();
-        setProducts([newProduct, ...products]);
-        setForm({ name: "", description: "", price: "", category: "", imageUrls: "" });
         toast.success("Product added successfully!");
+        setForm({ name: "", description: "", price: "", category: "", imageUrls: "" });
+        setShowAddDialog(false);
+        fetchProducts();
         fetchStats();
       } else {
-        const err = await res.json();
-        toast.error(err.error || "Failed to add product");
+        toast.error("Failed to add product");
       }
     } catch {
       toast.error("Error adding product");
@@ -314,6 +319,12 @@ export default function AdminPage() {
     }
   };
 
+  const filteredProducts = products.filter(product =>
+    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    product.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    product.category?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -389,120 +400,150 @@ export default function AdminPage() {
           </TabsContent>
 
           <TabsContent value="products" className="space-y-6">
+            {/* Products Header */}
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-bold">Products Management</h2>
+                <p className="text-muted-foreground">
+                  {productsLoading 
+                    ? "Loading products..." 
+                    : `${filteredProducts.length} of ${products.length} products`
+                  }
+                </p>
+              </div>
+              <Button onClick={() => setShowAddDialog(true)} className="flex items-center gap-2">
+                <Plus className="w-4 h-4" />
+                Add Product
+              </Button>
+            </div>
+
+            {/* Search Bar */}
             <Card>
-              <CardHeader>
-                <CardTitle>Add New Product</CardTitle>
-                <CardDescription>Create a new product for your store</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium">Name</label>
-                      <Input
-                        name="name"
-                        value={form.name}
-                        onChange={handleChange}
-                        placeholder="Product name"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Price</label>
-                      <Input
-                        name="price"
-                        type="number"
-                        step="0.01"
-                        value={form.price}
-                        onChange={handleChange}
-                        placeholder="₹0.00"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Description</label>
-                    <Input
-                      name="description"
-                      value={form.description}
-                      onChange={handleChange}
-                      placeholder="Product description"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Category</label>
-                    <Select value={form.category} onValueChange={(value) => setForm({ ...form, category: value })}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((category) => (
-                          <SelectItem key={category} value={category}>
-                            {category}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Image URLs (comma-separated)</label>
-                    <Input
-                      name="imageUrls"
-                      value={form.imageUrls}
-                      onChange={handleChange}
-                      placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg"
-                    />
-                  </div>
-                  <Button type="submit" disabled={loadingData}>
-                    {loadingData ? "Adding..." : "Add Product"}
-                  </Button>
-                </form>
+              <CardContent className="pt-6">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                  <Input
+                    placeholder="Search products by name, description, or category..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                  {searchTerm && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSearchTerm("")}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+                    >
+                      ×
+                    </Button>
+                  )}
+                </div>
               </CardContent>
             </Card>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {products.map((product) => (
-                <Card key={product.id}>
-                  <CardHeader>
-                    <div className="aspect-square relative mb-4">
-                      {product.imageUrls && product.imageUrls.length > 0 ? (
-                        <ProductImageCarousel images={product.imageUrls} alt={product.name} />
-                      ) : (
-                        <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500">
-                          No Image
-                        </div>
-                      )}
-                    </div>
-                    <CardTitle className="text-lg">{product.name}</CardTitle>
-                    <CardDescription className="line-clamp-2">{product.description}</CardDescription>
-                    {product.category && (
-                      <Badge variant="secondary" className="w-fit">
-                        {product.category}
-                      </Badge>
+            {/* Products Grid */}
+            {productsLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {[...Array(8)].map((_, i) => (
+                  <Card key={i} className="animate-pulse">
+                    <CardHeader className="pb-3">
+                      <div className="aspect-square bg-gray-200 rounded-lg mb-4"></div>
+                      <div className="space-y-2">
+                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                        <div className="h-3 bg-gray-200 rounded w-full"></div>
+                        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                        <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <div className="flex gap-2">
+                        <div className="h-8 bg-gray-200 rounded flex-1"></div>
+                        <div className="h-8 bg-gray-200 rounded flex-1"></div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {filteredProducts.map((product) => (
+                  <Card key={product.id} className="group hover:shadow-lg transition-shadow">
+                    <CardHeader className="pb-3">
+                      <div className="aspect-square relative mb-4 overflow-hidden rounded-lg">
+                        {product.imageUrls && product.imageUrls.length > 0 ? (
+                          <ProductImageCarousel images={product.imageUrls} alt={product.name} />
+                        ) : (
+                          <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500">
+                            No Image
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <CardTitle className="text-lg line-clamp-2">{product.name}</CardTitle>
+                        <CardDescription className="line-clamp-2 text-sm">
+                          {product.description || "No description"}
+                        </CardDescription>
+                        {product.category && (
+                          <Badge variant="secondary" className="w-fit text-xs">
+                            {product.category}
+                          </Badge>
+                        )}
+                        <div className="text-lg font-bold text-green-600">₹{product.price.toFixed(2)}</div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openEdit(product)}
+                          className="flex-1 flex items-center gap-2"
+                        >
+                          <Edit className="w-3 h-3" />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => setDeleteProduct(product)}
+                          className="flex-1 flex items-center gap-2"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          Delete
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {/* Empty State */}
+            {!productsLoading && filteredProducts.length === 0 && (
+              <Card>
+                <CardContent className="pt-12 pb-12">
+                  <div className="text-center">
+                    <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-medium mb-2">
+                      {searchTerm ? "No products found" : "No products yet"}
+                    </h3>
+                    <p className="text-muted-foreground mb-4">
+                      {searchTerm 
+                        ? "Try adjusting your search terms" 
+                        : "Get started by adding your first product"
+                      }
+                    </p>
+                    {!searchTerm && (
+                      <Button onClick={() => setShowAddDialog(true)} className="flex items-center gap-2">
+                        <Plus className="w-4 h-4" />
+                        Add Your First Product
+                      </Button>
                     )}
-                    <div className="text-lg font-bold text-green-600">₹{product.price.toFixed(2)}</div>
-                  </CardHeader>
-                  <CardContent className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openEdit(product)}
-                      className="flex-1"
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => setDeleteProduct(product)}
-                      className="flex-1"
-                    >
-                      Delete
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="orders" className="space-y-6">
@@ -680,6 +721,82 @@ export default function AdminPage() {
               {loadingData ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Product Dialog */}
+      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Add New Product</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Name</label>
+                <Input
+                  name="name"
+                  value={form.name}
+                  onChange={handleChange}
+                  placeholder="Product name"
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Price</label>
+                <Input
+                  name="price"
+                  type="number"
+                  step="0.01"
+                  value={form.price}
+                  onChange={handleChange}
+                  placeholder="₹0.00"
+                  required
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Description</label>
+              <Input
+                name="description"
+                value={form.description}
+                onChange={handleChange}
+                placeholder="Product description"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Category</label>
+              <Select value={form.category} onValueChange={(value) => setForm({ ...form, category: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Image URLs (comma-separated)</label>
+              <Input
+                name="imageUrls"
+                value={form.imageUrls}
+                onChange={handleChange}
+                placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg"
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setShowAddDialog(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={loadingData}>
+                {loadingData ? "Adding..." : "Add Product"}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

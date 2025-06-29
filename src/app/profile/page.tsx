@@ -14,9 +14,18 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
 
+interface Address {
+  line1: string;
+  state: string;
+  city: string;
+  pincode: string;
+  mobile: string;
+}
+
 interface ProfileForm {
   name: string;
   email: string;
+  address: Address;
 }
 
 interface PasswordForm {
@@ -36,14 +45,16 @@ export default function ProfilePage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   // Local state for displaying user data (will be updated immediately)
-  const [localUserData, setLocalUserData] = useState<{ name: string; email: string }>({
+  const [localUserData, setLocalUserData] = useState<{ name: string; email: string; address: Address }>({
     name: "",
     email: "",
+    address: { line1: "", state: "", city: "", pincode: "", mobile: "" },
   });
   
   const [profileForm, setProfileForm] = useState<ProfileForm>({
     name: "",
     email: "",
+    address: { line1: "", state: "", city: "", pincode: "", mobile: "" },
   });
 
   const [passwordForm, setPasswordForm] = useState<PasswordForm>({
@@ -61,16 +72,47 @@ export default function ProfilePage() {
       router.push("/auth/signin");
       return;
     }
-    const userData = {
-      name: session.user?.name || "",
-      email: session.user?.email || "",
+    // Fetch user profile to get structured address
+    const fetchProfile = async () => {
+      try {
+        const res = await fetch("/api/profile");
+        if (res.ok) {
+          const data = await res.json();
+          const userData = {
+            name: data.user?.name || "",
+            email: data.user?.email || "",
+            address: data.user?.address || { line1: "", state: "", city: "", pincode: "", mobile: "" },
+          };
+          setLocalUserData(userData);
+          setProfileForm(userData);
+        }
+      } catch {
+        // fallback to session
+        const userData = {
+          name: session.user?.name || "",
+          email: session.user?.email || "",
+          address: { line1: "", state: "", city: "", pincode: "", mobile: "" },
+        };
+        setLocalUserData(userData);
+        setProfileForm(userData);
+      }
     };
-    setLocalUserData(userData);
-    setProfileForm(userData);
+    fetchProfile();
   }, [session, status, router]);
 
   const handleProfileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setProfileForm({ ...profileForm, [e.target.name]: e.target.value });
+    setProfileMessage(null);
+  };
+
+  const handleAddressInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setProfileForm({
+      ...profileForm,
+      address: {
+        ...profileForm.address,
+        [e.target.name]: e.target.value,
+      },
+    });
     setProfileMessage(null);
   };
 
@@ -97,6 +139,7 @@ export default function ProfilePage() {
           const updatedUserData = {
             name: data.user.name,
             email: data.user.email,
+            address: data.user.address || { line1: "", state: "", city: "", pincode: "", mobile: "" },
           };
           setLocalUserData(updatedUserData);
           setProfileForm(updatedUserData);
@@ -162,6 +205,7 @@ export default function ProfilePage() {
     setProfileForm({
       name: localUserData.name,
       email: localUserData.email,
+      address: localUserData.address,
     });
     setIsEditing(false);
   };
@@ -310,6 +354,78 @@ export default function ProfilePage() {
                       <p className="text-sm font-medium">
                         {new Date().toLocaleDateString()}
                       </p>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="flex items-center gap-3">
+                    <Settings className="h-5 w-5 text-muted-foreground" />
+                    <div className="flex-1">
+                      <Label>Address</Label>
+                      {isEditing ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="line1">Street / House</Label>
+                            <Input
+                              id="line1"
+                              name="line1"
+                              value={profileForm.address.line1}
+                              onChange={handleAddressInputChange}
+                              placeholder="Street, House No."
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="state">State</Label>
+                            <Input
+                              id="state"
+                              name="state"
+                              value={profileForm.address.state}
+                              onChange={handleAddressInputChange}
+                              placeholder="State"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="city">City</Label>
+                            <Input
+                              id="city"
+                              name="city"
+                              value={profileForm.address.city}
+                              onChange={handleAddressInputChange}
+                              placeholder="City"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="pincode">Pincode</Label>
+                            <Input
+                              id="pincode"
+                              name="pincode"
+                              value={profileForm.address.pincode}
+                              onChange={handleAddressInputChange}
+                              placeholder="Pincode"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="mobile">Mobile</Label>
+                            <Input
+                              id="mobile"
+                              name="mobile"
+                              value={profileForm.address.mobile}
+                              onChange={handleAddressInputChange}
+                              placeholder="Mobile Number"
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-sm font-medium">
+                          {localUserData.address.line1 && <div>{localUserData.address.line1}</div>}
+                          {localUserData.address.city && <div>{localUserData.address.city}</div>}
+                          {localUserData.address.state && <div>{localUserData.address.state}</div>}
+                          {localUserData.address.pincode && <div>Pincode: {localUserData.address.pincode}</div>}
+                          {localUserData.address.mobile && <div>Mobile: {localUserData.address.mobile}</div>}
+                          {!localUserData.address.line1 && !localUserData.address.city && !localUserData.address.state && !localUserData.address.pincode && !localUserData.address.mobile && <div>Not provided</div>}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

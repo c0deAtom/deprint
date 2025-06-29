@@ -14,10 +14,11 @@ import { useCart } from "@/hooks/useCart";
 interface CheckoutForm {
   name: string;
   email: string;
-  address: string;
+  line1: string;
+  state: string;
   city: string;
-  zipCode: string;
-  phone: string;
+  pincode: string;
+  mobile: string;
 }
 
 export default function CheckoutPage() {
@@ -29,10 +30,11 @@ export default function CheckoutPage() {
   const [form, setForm] = useState<CheckoutForm>({
     name: "",
     email: "",
-    address: "",
+    line1: "",
+    state: "",
     city: "",
-    zipCode: "",
-    phone: "",
+    pincode: "",
+    mobile: "",
   });
 
   useEffect(() => {
@@ -54,6 +56,30 @@ export default function CheckoutPage() {
         name: session.user?.name || "",
         email: session.user?.email || "",
       }));
+
+      // Fetch user profile to get saved address
+      const fetchUserProfile = async () => {
+        try {
+          const res = await fetch("/api/profile");
+          if (res.ok) {
+            const data = await res.json();
+            if (data.user?.address) {
+              setForm(prev => ({
+                ...prev,
+                line1: data.user.address.line1 || "",
+                state: data.user.address.state || "",
+                city: data.user.address.city || "",
+                pincode: data.user.address.pincode || "",
+                mobile: data.user.address.mobile || "",
+              }));
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch user profile:", error);
+        }
+      };
+
+      fetchUserProfile();
     }
 
     setLoading(false);
@@ -74,7 +100,7 @@ export default function CheckoutPage() {
       return;
     }
     // Validate form
-    if (!form.name || !form.email || !form.address || !form.city || !form.zipCode || !form.phone) {
+    if (!form.name || !form.email || !form.line1 || !form.state || !form.city || !form.pincode || !form.mobile) {
       toast.error("Please fill in all required fields");
       return;
     }
@@ -84,7 +110,17 @@ export default function CheckoutPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          shippingInfo: form,
+          shippingInfo: {
+            name: form.name,
+            email: form.email,
+            address: {
+              line1: form.line1,
+              state: form.state,
+              city: form.city,
+              pincode: form.pincode,
+              mobile: form.mobile,
+            },
+          },
           items: cart.map(item => ({
             productId: item.id,
             name: item.name,
@@ -184,17 +220,26 @@ export default function CheckoutPage() {
                 </div>
                 
                 <div>
-                  <Label htmlFor="address">Address *</Label>
+                  <Label htmlFor="line1">Street / House *</Label>
                   <Input
-                    id="address"
-                    name="address"
-                    value={form.address}
+                    id="line1"
+                    name="line1"
+                    value={form.line1}
                     onChange={handleInputChange}
                     required
                   />
                 </div>
-                
                 <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="state">State *</Label>
+                    <Input
+                      id="state"
+                      name="state"
+                      value={form.state}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
                   <div>
                     <Label htmlFor="city">City *</Label>
                     <Input
@@ -205,28 +250,60 @@ export default function CheckoutPage() {
                       required
                     />
                   </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="zipCode">ZIP Code *</Label>
+                    <Label htmlFor="pincode">Pincode *</Label>
                     <Input
-                      id="zipCode"
-                      name="zipCode"
-                      value={form.zipCode}
+                      id="pincode"
+                      name="pincode"
+                      value={form.pincode}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="mobile">Mobile *</Label>
+                    <Input
+                      id="mobile"
+                      name="mobile"
+                      value={form.mobile}
                       onChange={handleInputChange}
                       required
                     />
                   </div>
                 </div>
-                
                 <div>
-                  <Label htmlFor="phone">Phone Number *</Label>
-                  <Input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    value={form.phone}
-                    onChange={handleInputChange}
-                    required
-                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        const res = await fetch("/api/profile");
+                        if (res.ok) {
+                          const data = await res.json();
+                          if (data.user?.address) {
+                            setForm(prev => ({
+                              ...prev,
+                              line1: data.user.address.line1 || "",
+                              state: data.user.address.state || "",
+                              city: data.user.address.city || "",
+                              pincode: data.user.address.pincode || "",
+                              mobile: data.user.address.mobile || "",
+                            }));
+                            toast.success("Address filled from profile!");
+                          } else {
+                            toast.info("No saved address found in profile");
+                          }
+                        }
+                      } catch {
+                        toast.error("Failed to load saved address");
+                      }
+                    }}
+                  >
+                    Use Saved
+                  </Button>
                 </div>
               </form>
             </CardContent>

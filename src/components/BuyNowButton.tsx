@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { CreditCard, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { JsonValue } from "@prisma/client/runtime/library";
+import { useCart } from "@/hooks/useCart";
 
 interface Product {
   id: string;
@@ -19,6 +21,8 @@ interface Product {
 export default function BuyNowButton({ product }: { product: Product }) {
   const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  const { addToCart, clearCart } = useCart();
 
   const handleBuyNow = async () => {
     if (!session?.user) {
@@ -28,29 +32,28 @@ export default function BuyNowButton({ product }: { product: Product }) {
 
     setLoading(true);
     try {
-      // Create a direct CONFIRMED order (not PENDING)
-      const res = await fetch("/api/orders/buy-now", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items: [{ productId: product.id, quantity: 1, price: product.price }],
-        }),
+      // Clear the cart first to ensure only this product is in it
+      await clearCart();
+      
+      // Add the product to cart
+      await addToCart({
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        imageUrls: product.imageUrls,
       });
 
-      if (res.ok) {
-        const order = await res.json();
-        toast.success(`Order placed successfully! Order #${order.id.slice(-8)}`);
-        // Refresh cart if needed
-        window.dispatchEvent(new Event("cart-updated"));
-      } else {
-        const error = await res.json();
-        toast.error(error.error || "Purchase failed");
-      }
+      toast.success("Product added to cart! Redirecting to checkout...");
+      
+      // Small delay to show the success message before redirecting
+      setTimeout(() => {
+        router.push("/checkout");
+      }, 1000);
     } catch (error) {
-      console.error("Failed to create order:", error);
-      toast.error("Purchase failed");
+      console.error("Failed to add product to cart:", error);
+      toast.error("Failed to add product to cart");
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -64,7 +67,7 @@ export default function BuyNowButton({ product }: { product: Product }) {
       {loading ? (
         <>
           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          Processing...
+          Adding to Cart...
         </>
       ) : session?.user ? (
         <>

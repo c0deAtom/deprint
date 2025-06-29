@@ -37,6 +37,7 @@ export async function GET(req: NextRequest) {
         id: true,
         name: true,
         email: true,
+        address: true,
         createdAt: true,
       }
     });
@@ -67,14 +68,17 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    const { name, email } = await req.json();
-    console.log("Received data:", { name, email });
+    const { name, email, address } = await req.json();
+    console.log("Received data:", { name, email, address });
 
     // Validate input
     if (!name || !email) {
       console.log("Missing required fields");
       return NextResponse.json({ error: "Name and email are required" }, { status: 400 });
     }
+
+    // Optionally validate address fields here
+    // address: { line1, state, city, pincode, mobile }
 
     // Check if email is already taken by another user
     const existingUser = await prisma.user.findFirst({
@@ -97,11 +101,13 @@ export async function PUT(req: NextRequest) {
       data: {
         name: name.trim(),
         email: email.toLowerCase().trim(),
+        address: address || null,
       },
       select: {
         id: true,
         name: true,
         email: true,
+        address: true,
       }
     });
 
