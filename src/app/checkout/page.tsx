@@ -262,9 +262,9 @@ export default function CheckoutPage() {
 
   if (loading || status === "loading") {
     return (
-      <main className="flex flex-col items-center px-4 min-h-screen">
+      <main className="flex flex-col items-center px-4 py-10 min-h-screen">
         <div className="text-center">
-          <div className="text-lg">Loading checkout...</div>
+         
         </div>
       </main>
     );
@@ -272,7 +272,7 @@ export default function CheckoutPage() {
 
   if (cart.length === 0 && !checkoutSuccess) {
     return (
-      <main className="flex flex-col items-center px-4 min-h-screen">
+      <main className="flex flex-col items-center px-4 py-10 min-h-screen">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Checkout</h1>
           <p className="text-muted-foreground mb-4">Your cart is empty.</p>
