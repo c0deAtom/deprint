@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,8 @@ export default function Navbar() {
   const { getCartCount } = useCart();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
 
   const cartCount = getCartCount();
 
@@ -40,6 +42,19 @@ export default function Navbar() {
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        setShowProfileMenu(false);
+      }
+    }
+    if (showProfileMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showProfileMenu]);
 
   return (
     <nav className="bg-white shadow-sm border-b fixed top-0 left-0 right-0 z-50">
@@ -79,59 +94,42 @@ export default function Navbar() {
           <div className="hidden md:flex items-center ml-auto space-x-4">
             {/* Cart */}
             <Link href="/cart" className="relative">
-                <Button variant="ghost" size="lg" className="relative">
+              <Button variant="ghost" size="lg" className="relative">
                 <ShoppingCart className="w-8 h-8" />
                 {cartCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                     {cartCount > 99 ? '99+' : cartCount}
                   </span>
-                )}  
+                )}
               </Button>
             </Link>
-
-            {/* User Menu */}
+            {/* Custom Profile Popover */}
             {session?.user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-blue-100 text-blue-600 text-sm font-medium">
-                        {getUserInitials(session.user.name, session.user.email)}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" forceMount>
-                  <DropdownMenuLabel className="font-normal">
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">
-                        {session.user.name || 'User'}
-                      </p>
-                      <p className="text-xs leading-none text-muted-foreground">
-                        {session.user.email}
-                      </p>
+              <div className="relative">
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full" onClick={() => setShowProfileMenu(v => !v)}>
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="bg-blue-100 text-blue-600 text-sm font-medium">
+                      {getUserInitials(session.user.name, session.user.email)}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+                {showProfileMenu && (
+                  <div ref={profileMenuRef} className="absolute right-0 mt-2 w-56 bg-white shadow-lg rounded-lg border z-50 py-2">
+                    <div className="px-4 py-2 border-b">
+                      <div className="font-medium text-sm">{session.user.name || 'User'}</div>
+                      <div className="text-xs text-muted-foreground">{session.user.email}</div>
                     </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/profile" className="flex items-center">
-                      <User className="mr-2 h-4 w-4" />
-                      <span>Profile</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/orders" className="flex items-center">
-                      <Package className="mr-2 h-4 w-4" />
-                      <span>Orders</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut} className="text-red-600 focus:text-red-600">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Sign out</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    <Link href="/profile" className="block px-4 py-2 hover:bg-gray-100 text-sm">Profile</Link>
+                    <Link href="/orders" className="block px-4 py-2 hover:bg-gray-100 text-sm">Orders</Link>
+                    <button
+                      onClick={handleSignOut}
+                      className="block w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100 text-sm"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                )}
+              </div>
             ) : (
               <Link href="/api/auth/signin">
                 <Button size="sm">
