@@ -24,9 +24,8 @@ export async function POST(req: NextRequest) {
     for (const item of items) {
       totalAmount += item.price * item.quantity;
     }
-    const shipping = 5.99;
-    const tax = totalAmount * 0.08;
-    const grandTotal = totalAmount + shipping + tax;
+    const shipping = 80;
+    const grandTotal = totalAmount + shipping;
 
     // Create the order
     const confirmedOrder = await prisma.order.create({

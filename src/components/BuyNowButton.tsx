@@ -22,7 +22,7 @@ export default function BuyNowButton({ product }: { product: Product }) {
   const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const { addToCart, clearCart } = useCart();
+  const { addToCart, isInCart } = useCart();
 
   const handleBuyNow = async () => {
     if (!session?.user) {
@@ -32,10 +32,17 @@ export default function BuyNowButton({ product }: { product: Product }) {
 
     setLoading(true);
     try {
-      // Clear the cart first to ensure only this product is in it
-      await clearCart();
-      
-      // Add the product to cart
+      // Check if product is already in cart
+      if (isInCart(product.id)) {
+        // If already in cart, just redirect to checkout
+        toast.success("Product already in cart! Redirecting to checkout...");
+        setTimeout(() => {
+          router.push("/checkout");
+        }, 1000);
+        return;
+      }
+
+      // Add the product to cart (without clearing existing items)
       await addToCart({
         id: product.id,
         name: product.name,
@@ -52,6 +59,7 @@ export default function BuyNowButton({ product }: { product: Product }) {
     } catch (error) {
       console.error("Failed to add product to cart:", error);
       toast.error("Failed to add product to cart");
+    } finally {
       setLoading(false);
     }
   };
@@ -67,7 +75,7 @@ export default function BuyNowButton({ product }: { product: Product }) {
       {loading ? (
         <>
           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          Adding to Cart...
+          Buying...
         </>
       ) : session?.user ? (
         <>

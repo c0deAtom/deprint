@@ -26,6 +26,7 @@ interface UseCartReturn extends CartState {
   refreshCart: () => Promise<void>;
   isInCart: (productId: string) => boolean;
   getCartTotal: () => number;
+  getCartSubtotal: () => number;
   getCartCount: () => number;
   batchLoading: boolean;
 }
@@ -175,7 +176,14 @@ export function useCart(): UseCartReturn {
   }, [state.items]);
 
   const getCartTotal = useCallback(() => {
-    return state.items.reduce((total, item) => total + (item.price * item.quantity), 0);
+    const subtotal = state.items.reduce((total, item) => total + (item.price * item.quantity), 0);
+    const shipping = 80; // Shipping rate ₹80
+    return subtotal + shipping;
+  }, [state.items]);
+
+  const getCartSubtotal = useCallback(() => {
+    const subtotal = state.items.reduce((total, item) => total + (item.price * item.quantity), 0);
+    return subtotal;
   }, [state.items]);
 
   const getCartCount = useCallback(() => {
@@ -193,6 +201,7 @@ export function useCart(): UseCartReturn {
     refreshCart,
     isInCart,
     getCartTotal,
+    getCartSubtotal,
     getCartCount,
     batchLoading,
   };

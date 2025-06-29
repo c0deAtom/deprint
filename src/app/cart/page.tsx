@@ -13,11 +13,20 @@ import { CartItemSkeletonList } from "@/components/CartItemSkeleton";
 
 export default function CartPage() {
   const { data: session } = useSession();
-  const { items: cartItems, loading, refreshCart, removeFromCart, removeMultipleFromCart } = useCart();
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const { 
+    items: cartItems, 
+    loading, 
+    removeFromCart, 
+    removeMultipleFromCart, 
+    updateQuantity,
+    refreshCart,
+    getCartSubtotal,
+    getCartTotal
+  } = useCart();
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [removingItems, setRemovingItems] = useState<Set<string>>(new Set());
   const [bulkRemoving, setBulkRemoving] = useState(false);
+  const [updatingQuantities, setUpdatingQuantities] = useState<Set<string>>(new Set());
 
   // Load cart details when component mounts
   useEffect(() => {
@@ -72,34 +81,27 @@ export default function CartPage() {
     }
   };
 
-  const handleCheckout = async () => {
-    if (!session?.user) {
-      toast.error("Please sign in to checkout");
-      return;
-    }
-
-    setCheckoutLoading(true);
+  const handleQuantityUpdate = async (productId: string, newQuantity: number) => {
+    if (newQuantity < 1) return;
+    
+    setUpdatingQuantities(prev => new Set(prev).add(productId));
     try {
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-
-      if (res.ok) {
-        const order = await res.json();
-        toast.success(`Order placed successfully! Order #${order.id.slice(-8)}`);
-        // Refresh cart details
-        await refreshCart();
-      } else {
-        toast.error("Checkout failed");
-      }
+      await updateQuantity(productId, newQuantity);
+      toast.success('Quantity updated!');
     } catch {
-      toast.error("Checkout failed");
+      toast.error('Failed to update quantity');
+    } finally {
+      setUpdatingQuantities(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(productId);
+        return newSet;
+      });
     }
-    setCheckoutLoading(false);
   };
 
-  const total = cartItems.reduce((sum: number, item) => sum + (item.price * item.quantity), 0);
+  const total = getCartSubtotal();
+  const shipping = 80; // Shipping rate ₹80
+  const grandTotal = getCartTotal();
   const selectedTotal = cartItems
     .filter(item => selectedItems.has(item.id))
     .reduce((sum: number, item) => sum + (item.price * item.quantity), 0);
@@ -240,9 +242,43 @@ export default function CartPage() {
                       <div className="text-lg font-medium text-green-600 mb-2">
                         ₹{item.price.toFixed(2)}
                       </div>
-                      <div className="text-sm text-muted-foreground mb-2">
-                        Quantity: {item.quantity}
+                      
+                      {/* Quantity Controls */}
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="text-sm font-medium text-muted-foreground">Quantity:</span>
+                        <div className="flex items-center border rounded-md">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 rounded-none border-r"
+                            onClick={() => handleQuantityUpdate(item.id, item.quantity - 1)}
+                            disabled={updatingQuantities.has(item.id) || loading || bulkRemoving || item.quantity <= 1}
+                          >
+                            {updatingQuantities.has(item.id) ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              "−"
+                            )}
+                          </Button>
+                          <span className="px-3 py-1 text-sm font-medium min-w-[2rem] text-center">
+                            {item.quantity}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 rounded-none border-l"
+                            onClick={() => handleQuantityUpdate(item.id, item.quantity + 1)}
+                            disabled={updatingQuantities.has(item.id) || loading || bulkRemoving}
+                          >
+                            {updatingQuantities.has(item.id) ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              "+"
+                            )}
+                          </Button>
+                        </div>
                       </div>
+                      
                       <div className="text-sm font-medium">
                         Total: ₹{((item.price * item.quantity).toFixed(2))}
                       </div>
@@ -253,7 +289,7 @@ export default function CartPage() {
                         variant="destructive" 
                         size="sm" 
                         onClick={() => handleRemoveItem(item.id)}
-                        disabled={removingItems.has(item.id) || loading || bulkRemoving}
+                        disabled={removingItems.has(item.id) || loading || bulkRemoving || updatingQuantities.has(item.id)}
                       >
                         {removingItems.has(item.id) ? (
                           <>
@@ -276,44 +312,47 @@ export default function CartPage() {
           
           {/* Order Summary */}
           <Card className="p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Order Summary</h2>
-              <div className="text-2xl font-bold">₹{total.toFixed(2)}</div>
-            </div>
-            <div className="flex gap-3">
-              <Button 
-                onClick={handleCheckout} 
-                disabled={checkoutLoading || !session?.user || loading || bulkRemoving}
-                className="flex-1"
-                size="lg"
-              >
-                {checkoutLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Processing...
-                  </>
-                ) : session?.user ? (
-                  "Quick Checkout"
-                ) : (
-                  "Sign in to Checkout"
-                )}
-              </Button>
-              {session?.user && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-semibold">Order Summary</h2>
+              </div>
+              
+              {/* Price Breakdown */}
+              <div className="space-y-2 border-t pt-4">
+                <div className="flex justify-between text-sm">
+                  <span>Subtotal ({cartItems.length} items)</span>
+                  <span>₹{total.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Shipping</span>
+                  <span>₹{shipping.toFixed(2)}</span>
+                </div>
+                <div className="border-t pt-2 flex justify-between font-bold text-lg">
+                  <span>Total</span>
+                  <span>₹{grandTotal.toFixed(2)}</span>
+                </div>
+              </div>
+              
+              <div className="flex gap-3">
                 <Button 
                   asChild
-                  variant="outline"
+                  disabled={!session?.user || loading || bulkRemoving}
+                  className="flex-1"
                   size="lg"
-                  disabled={loading || bulkRemoving}
                 >
-                  <a href="/checkout">Detailed Checkout</a>
+                  {session?.user ? (
+                    <a href="/checkout">Checkout</a>
+                  ) : (
+                    <a href="/signin?callbackUrl=/cart">Sign in to Checkout</a>
+                  )}
                 </Button>
+              </div>
+              {!session?.user && (
+                <p className="text-sm text-muted-foreground text-center">
+                  Please sign in to complete your purchase
+                </p>
               )}
             </div>
-            {!session?.user && (
-              <p className="text-sm text-muted-foreground mt-2 text-center">
-                Please sign in to complete your purchase
-              </p>
-            )}
           </Card>
         </div>
       )}

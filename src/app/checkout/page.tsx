@@ -27,6 +27,9 @@ export default function CheckoutPage() {
   const { items: cart, clearCart } = useCart();
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [addressLoading, setAddressLoading] = useState(false);
+  const [showValidation, setShowValidation] = useState(false);
+  const [checkoutSuccess, setCheckoutSuccess] = useState(false);
   const [form, setForm] = useState<CheckoutForm>({
     name: "",
     email: "",
@@ -59,6 +62,7 @@ export default function CheckoutPage() {
 
       // Fetch user profile to get saved address
       const fetchUserProfile = async () => {
+        setAddressLoading(true);
         try {
           const res = await fetch("/api/profile");
           if (res.ok) {
@@ -76,10 +80,14 @@ export default function CheckoutPage() {
           }
         } catch (error) {
           console.error("Failed to fetch user profile:", error);
+        } finally {
+          setAddressLoading(false);
         }
       };
 
       fetchUserProfile();
+    } else {
+      setAddressLoading(false);
     }
 
     setLoading(false);
@@ -87,6 +95,10 @@ export default function CheckoutPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    // Hide validation errors when user starts typing
+    if (showValidation && e.target.value.trim()) {
+      setShowValidation(false);
+    }
   };
 
   const handleCheckout = async (e: React.FormEvent) => {
@@ -101,6 +113,7 @@ export default function CheckoutPage() {
     }
     // Validate form
     if (!form.name || !form.email || !form.line1 || !form.state || !form.city || !form.pincode || !form.mobile) {
+      setShowValidation(true);
       toast.error("Please fill in all required fields");
       return;
     }
@@ -132,6 +145,7 @@ export default function CheckoutPage() {
       });
       if (res.ok) {
         const order = await res.json();
+        setCheckoutSuccess(true);
         toast.success(`Order placed successfully! Order #${order.id.slice(-8)}`);
         clearCart();
         window.dispatchEvent(new Event("cart-updated"));
@@ -148,9 +162,8 @@ export default function CheckoutPage() {
   };
 
   const total = cart.reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0);
-  const shipping = 5.99; // Fixed shipping cost
-  const tax = total * 0.08; // 8% tax
-  const grandTotal = total + shipping + tax;
+  const shipping = 80; // Updated shipping rate to ₹80
+  const grandTotal = total + shipping;
 
   if (loading || status === "loading") {
     return (
@@ -162,7 +175,7 @@ export default function CheckoutPage() {
     );
   }
 
-  if (cart.length === 0) {
+  if (cart.length === 0 && !checkoutSuccess) {
     return (
       <main className="flex flex-col items-center py-12 px-4 min-h-screen">
         <div className="text-center">
@@ -176,6 +189,16 @@ export default function CheckoutPage() {
               Continue Shopping
             </Link>
           </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (checkoutSuccess) {
+    return (
+      <main className="flex flex-col items-center py-12 px-4 min-h-screen">
+        <div className="text-center">
+          <div className="text-lg">Redirecting to order details...</div>
         </div>
       </main>
     );
@@ -204,7 +227,11 @@ export default function CheckoutPage() {
                       value={form.name}
                       onChange={handleInputChange}
                       required
+                      className={showValidation && !form.name.trim() ? "border-red-500 focus:border-red-500" : ""}
                     />
+                    {showValidation && !form.name.trim() && (
+                      <p className="text-red-500 text-sm mt-1">Full name is required</p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="email">Email *</Label>
@@ -215,7 +242,11 @@ export default function CheckoutPage() {
                       value={form.email}
                       onChange={handleInputChange}
                       required
+                      className={showValidation && !form.email.trim() ? "border-red-500 focus:border-red-500" : ""}
                     />
+                    {showValidation && !form.email.trim() && (
+                      <p className="text-red-500 text-sm mt-1">Email is required</p>
+                    )}
                   </div>
                 </div>
                 
@@ -227,7 +258,11 @@ export default function CheckoutPage() {
                     value={form.line1}
                     onChange={handleInputChange}
                     required
+                    className={showValidation && !form.line1.trim() ? "border-red-500 focus:border-red-500" : ""}
                   />
+                  {showValidation && !form.line1.trim() && (
+                    <p className="text-red-500 text-sm mt-1">Street address is required</p>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -238,7 +273,11 @@ export default function CheckoutPage() {
                       value={form.state}
                       onChange={handleInputChange}
                       required
+                      className={showValidation && !form.state.trim() ? "border-red-500 focus:border-red-500" : ""}
                     />
+                    {showValidation && !form.state.trim() && (
+                      <p className="text-red-500 text-sm mt-1">State is required</p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="city">City *</Label>
@@ -248,7 +287,11 @@ export default function CheckoutPage() {
                       value={form.city}
                       onChange={handleInputChange}
                       required
+                      className={showValidation && !form.city.trim() ? "border-red-500 focus:border-red-500" : ""}
                     />
+                    {showValidation && !form.city.trim() && (
+                      <p className="text-red-500 text-sm mt-1">City is required</p>
+                    )}
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -260,7 +303,11 @@ export default function CheckoutPage() {
                       value={form.pincode}
                       onChange={handleInputChange}
                       required
+                      className={showValidation && !form.pincode.trim() ? "border-red-500 focus:border-red-500" : ""}
                     />
+                    {showValidation && !form.pincode.trim() && (
+                      <p className="text-red-500 text-sm mt-1">Pincode is required</p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="mobile">Mobile *</Label>
@@ -270,7 +317,11 @@ export default function CheckoutPage() {
                       value={form.mobile}
                       onChange={handleInputChange}
                       required
+                      className={showValidation && !form.mobile.trim() ? "border-red-500 focus:border-red-500" : ""}
                     />
+                    {showValidation && !form.mobile.trim() && (
+                      <p className="text-red-500 text-sm mt-1">Mobile number is required</p>
+                    )}
                   </div>
                 </div>
                 <div>
@@ -359,10 +410,6 @@ export default function CheckoutPage() {
                     <span>Shipping</span>
                     <span>₹{shipping.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Tax</span>
-                    <span>₹{tax.toFixed(2)}</span>
-                  </div>
                   <div className="border-t pt-2 flex justify-between font-bold text-lg">
                     <span>Total</span>
                     <span>₹{grandTotal.toFixed(2)}</span>
@@ -371,11 +418,11 @@ export default function CheckoutPage() {
                 
                 <Button
                   onClick={handleCheckout}
-                  disabled={checkoutLoading}
+                  disabled={checkoutLoading || addressLoading}
                   className="w-full mt-6"
                   size="lg"
                 >
-                  {checkoutLoading ? "Processing..." : `Place Order - ₹${grandTotal.toFixed(2)}`}
+                  {checkoutLoading ? "Processing..." : addressLoading ? "Loading Address..." : `Place Order - ₹${grandTotal.toFixed(2)}`}
                 </Button>
               </CardContent>
             </Card>

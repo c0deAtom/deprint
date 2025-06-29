@@ -163,11 +163,11 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span>Subtotal</span>
-                    <span>₹{order.total.toFixed(2)}</span>
+                    <span>₹{(order.total - 80).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Shipping</span>
-                    <span className="text-green-600">Free</span>
+                    <span>₹80.00</span>
                   </div>
                   <Separator />
                   <div className="flex justify-between font-bold text-lg">
