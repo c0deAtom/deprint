@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import ProductImageCarousel from "@/components/ProductImageCarousel";
-import { Package, ShoppingCart, LogOut, User, Plus, Edit, Trash2, Search, Calendar, X } from "lucide-react";
+import ImageUpload from "@/components/ImageUpload";
+import { Package, ShoppingCart, LogOut, User, Plus, Edit, Trash2, Search, Calendar, X, Link, Upload } from "lucide-react";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 
 interface Product {
@@ -84,9 +85,13 @@ export default function AdminPage() {
     totalRevenue: 0,
   });
   const [form, setForm] = useState({ name: "", description: "", price: "", category: "", imageUrls: "" });
+  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  const [imageTab, setImageTab] = useState<"upload" | "link">("upload");
   const [loadingData, setLoadingData] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [editForm, setEditForm] = useState({ name: "", description: "", price: "", category: "", imageUrls: "" });
+  const [editUploadedImages, setEditUploadedImages] = useState<string[]>([]);
+  const [editImageTab, setEditImageTab] = useState<"upload" | "link">("upload");
   const [deleteProduct, setDeleteProduct] = useState<Product | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -208,7 +213,9 @@ export default function AdminPage() {
     e.preventDefault();
     setLoadingData(true);
     try {
-      const imageUrlsArr = form.imageUrls.split(',').map(url => url.trim()).filter(Boolean);
+      const linkUrls = form.imageUrls.split(',').map(url => url.trim()).filter(Boolean);
+      const allImageUrls = [...uploadedImages, ...linkUrls];
+      
       const token = localStorage.getItem("adminToken");
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (token) {
@@ -217,11 +224,13 @@ export default function AdminPage() {
       const res = await fetch("/api/products", {
         method: "POST",
         headers,
-        body: JSON.stringify({ ...form, price: parseFloat(form.price), imageUrls: imageUrlsArr }),
+        body: JSON.stringify({ ...form, price: parseFloat(form.price), imageUrls: allImageUrls }),
       });
       if (res.ok) {
         toast.success("Product added successfully!");
         setForm({ name: "", description: "", price: "", category: "", imageUrls: "" });
+        setUploadedImages([]);
+        setImageTab("upload");
         setShowAddDialog(false);
         fetchProducts();
         fetchStats();
@@ -236,13 +245,21 @@ export default function AdminPage() {
 
   const openEdit = (product: Product) => {
     setEditProduct(product);
+    const productImages = Array.isArray(product.imageUrls) ? product.imageUrls : [];
+    
+    // Try to determine if images are uploaded (Cloudinary URLs) or links
+    const cloudinaryUrls = productImages.filter(url => url.includes('cloudinary.com'));
+    const linkUrls = productImages.filter(url => !url.includes('cloudinary.com'));
+    
+    setEditUploadedImages(cloudinaryUrls);
     setEditForm({
       name: product.name,
       description: product.description || "",
       price: product.price.toString(),
       category: product.category || "",
-      imageUrls: Array.isArray(product.imageUrls) ? product.imageUrls.join(', ') : "",
+      imageUrls: linkUrls.join(', '),
     });
+    setEditImageTab(cloudinaryUrls.length > 0 ? "upload" : "link");
   };
 
   const handleEditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -254,7 +271,9 @@ export default function AdminPage() {
     if (!editProduct) return;
     setLoadingData(true);
     try {
-      const imageUrlsArr = editForm.imageUrls.split(',').map(url => url.trim()).filter(Boolean);
+      const linkUrls = editForm.imageUrls.split(',').map(url => url.trim()).filter(Boolean);
+      const allImageUrls = [...editUploadedImages, ...linkUrls];
+      
       const token = localStorage.getItem("adminToken");
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (token) {
@@ -263,12 +282,14 @@ export default function AdminPage() {
       const res = await fetch(`/api/products/${editProduct.id}`, {
         method: "PUT",
         headers,
-        body: JSON.stringify({ ...editForm, price: parseFloat(editForm.price), imageUrls: imageUrlsArr }),
+        body: JSON.stringify({ ...editForm, price: parseFloat(editForm.price), imageUrls: allImageUrls }),
       });
       if (res.ok) {
         const updated = await res.json();
         setProducts(products.map(p => (p.id === updated.id ? updated : p)));
         setEditProduct(null);
+        setEditUploadedImages([]);
+        setEditImageTab("upload");
         toast.success("Product updated!");
       } else {
         const err = await res.json();
@@ -986,12 +1007,41 @@ export default function AdminPage() {
               </Select>
             </div>
             <div>
-              <label className="text-sm font-medium">Image URLs (comma-separated)</label>
-              <Input
-                name="imageUrls"
-                value={editForm.imageUrls}
-                onChange={handleEditChange}
-              />
+              <label className="text-sm font-medium">Product Images</label>
+              <Tabs value={editImageTab} onValueChange={(value) => setEditImageTab(value as "upload" | "link")} className="mt-2">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="upload" className="flex items-center gap-2">
+                    <Upload className="w-4 h-4" />
+                    Upload Images
+                  </TabsTrigger>
+                  <TabsTrigger value="link" className="flex items-center gap-2">
+                    <Link className="w-4 h-4" />
+                    Image Links
+                  </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="upload" className="mt-4">
+                  <ImageUpload
+                    onImagesUploaded={setEditUploadedImages}
+                    existingImages={editUploadedImages}
+                    maxImages={5}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="link" className="mt-4">
+                  <div className="space-y-2">
+                    <Input
+                      name="imageUrls"
+                      value={editForm.imageUrls}
+                      onChange={handleEditChange}
+                      placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Enter image URLs separated by commas. You can use both upload and links together.
+                    </p>
+                  </div>
+                </TabsContent>
+              </Tabs>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setEditProduct(null)}>
@@ -1079,13 +1129,41 @@ export default function AdminPage() {
               </Select>
             </div>
             <div>
-              <label className="text-sm font-medium">Image URLs (comma-separated)</label>
-              <Input
-                name="imageUrls"
-                value={form.imageUrls}
-                onChange={handleChange}
-                placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg"
-              />
+              <label className="text-sm font-medium">Product Images</label>
+              <Tabs value={imageTab} onValueChange={(value) => setImageTab(value as "upload" | "link")} className="mt-2">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="upload" className="flex items-center gap-2">
+                    <Upload className="w-4 h-4" />
+                    Upload Images
+                  </TabsTrigger>
+                  <TabsTrigger value="link" className="flex items-center gap-2">
+                    <Link className="w-4 h-4" />
+                    Image Links
+                  </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="upload" className="mt-4">
+                  <ImageUpload
+                    onImagesUploaded={setUploadedImages}
+                    existingImages={uploadedImages}
+                    maxImages={5}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="link" className="mt-4">
+                  <div className="space-y-2">
+                    <Input
+                      name="imageUrls"
+                      value={form.imageUrls}
+                      onChange={handleChange}
+                      placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Enter image URLs separated by commas. You can use both upload and links together.
+                    </p>
+                  </div>
+                </TabsContent>
+              </Tabs>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowAddDialog(false)}>
