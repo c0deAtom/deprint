@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, User, Menu, X, LogOut, Package, Sidebar } from "lucide-react";
+import { ShoppingCart, User, Menu, X, LogOut, Package, Sidebar, ChevronDown } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import {
   DropdownMenu,
@@ -21,6 +21,7 @@ export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showPolicies, setShowPolicies] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
   const cartCount = getCartCount();
@@ -75,18 +76,42 @@ export default function Navbar() {
           {/* Company Logo and Name - Left side with no extra space */}
           <Link href="/" className="flex items-center ">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">E</span>
+              <span className="text-white font-bold text-sm">D</span>
             </div>
-            <span className="text-xl font-bold text-gray-900 ml-2">EcomStore</span>
+            <span className="text-xl font-bold text-gray-900 ml-2">DePrint</span>
           </Link>
 
           {/* Navigation Buttons - Center with little space */}
-          <div className="hidden md:flex items-center ml-16 space-x-6">
+          <div className="hidden md:flex items-center ml-240 space-x-6">
             <Link href="/" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
               Home
             </Link>
             <Link href="/products" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
               Products
+            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="text-gray-700 hover:text-blue-600 font-medium flex items-center gap-1">
+                  Policies <ChevronDown className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem asChild>
+                  <Link href="/terms-of-service">Terms of Service</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/privacy-policy">Privacy Policy</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/shipping-policy">Shipping Policy</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/return-policy">Return Policy</Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Link href="/contact" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
+              Contact
             </Link>
           </div>
 
@@ -235,6 +260,30 @@ export default function Navbar() {
               >
                 Products
               </Link>
+              <div>
+                <button 
+                  onClick={() => setShowPolicies(!showPolicies)} 
+                  className="w-full flex justify-between items-center text-gray-700 hover:text-blue-600 transition-colors"
+                >
+                  <span>Policies</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform ${showPolicies ? 'rotate-180' : ''}`} />
+                </button>
+                {showPolicies && (
+                  <div className="flex flex-col space-y-2 pl-4 pt-2">
+                    <Link href="/terms-of-service" className="text-gray-600 hover:text-blue-600" onClick={() => setIsMenuOpen(false)}>Terms of Service</Link>
+                    <Link href="/privacy-policy" className="text-gray-600 hover:text-blue-600" onClick={() => setIsMenuOpen(false)}>Privacy Policy</Link>
+                    <Link href="/shipping-policy" className="text-gray-600 hover:text-blue-600" onClick={() => setIsMenuOpen(false)}>Shipping Policy</Link>
+                    <Link href="/return-policy" className="text-gray-600 hover:text-blue-600" onClick={() => setIsMenuOpen(false)}>Return Policy</Link>
+                  </div>
+                )}
+              </div>
+              <Link
+                href="/contact"
+                className="text-gray-700 hover:text-blue-600 transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Contact
+              </Link>
               
               {/* Mobile Cart */}
               <Link
@@ -347,6 +396,30 @@ export default function Navbar() {
               onClick={toggleSidebar}
             >
               Products
+            </Link>
+            <div>
+              <button 
+                onClick={() => setShowPolicies(!showPolicies)} 
+                className="w-full flex justify-between items-center text-sm py-2 px-2 rounded hover:bg-gray-100 font-medium"
+              >
+                <span>Policies</span>
+                <ChevronDown className={`w-4 h-4 transition-transform ${showPolicies ? 'rotate-180' : ''}`} />
+              </button>
+              {showPolicies && (
+                <div className="flex flex-col gap-1 pl-4 pt-1">
+                   <Link href="/terms-of-service" className="hover:underline text-sm py-2 px-2 rounded hover:bg-gray-100" onClick={toggleSidebar}>Terms of Service</Link>
+                   <Link href="/privacy-policy" className="hover:underline text-sm py-2 px-2 rounded hover:bg-gray-100" onClick={toggleSidebar}>Privacy Policy</Link>
+                   <Link href="/shipping-policy" className="hover:underline text-sm py-2 px-2 rounded hover:bg-gray-100" onClick={toggleSidebar}>Shipping Policy</Link>
+                   <Link href="/return-policy" className="hover:underline text-sm py-2 px-2 rounded hover:bg-gray-100" onClick={toggleSidebar}>Return Policy</Link>
+                </div>
+              )}
+            </div>
+            <Link 
+              href="/contact" 
+              className="hover:underline text-sm py-2 px-2 rounded hover:bg-gray-100"
+              onClick={toggleSidebar}
+            >
+              Contact
             </Link>
             <Link 
               href="/cart" 

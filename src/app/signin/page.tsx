@@ -249,6 +249,14 @@ function SignInForm() {
                     </button>
                   </p>
                 </div>
+
+                <div className="text-center text-sm text-gray-500 pt-2">
+                  <p>
+                    By continuing, you agree to our{' '}
+                    <Link href="/terms-of-service" className="underline hover:text-blue-700">Terms of Service</Link> and{' '}
+                    <Link href="/privacy-policy" className="underline hover:text-blue-700">Privacy Policy</Link>.
+                  </p>
+                </div>
               </form>
             ) : (
               /* Sign Up Form */
@@ -316,7 +324,11 @@ function SignInForm() {
                   className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300"
                   size="lg"
                 >
-                  {loading ? "Creating account..." : "Create Account"}
+                  {loading ? (
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin inline-block align-middle" /> Creating account...</>
+                  ) : (
+                    "Create Account"
+                  )}
                 </Button>
 
                 <div className="text-center">
@@ -332,6 +344,14 @@ function SignInForm() {
                     >
                       Sign in here
                     </button>
+                  </p>
+                </div>
+
+                <div className="text-center text-sm text-gray-500 pt-2">
+                  <p>
+                    By creating an account, you agree to our{' '}
+                    <Link href="/terms-of-service" className="underline hover:text-blue-700">Terms of Service</Link> and{' '}
+                    <Link href="/privacy-policy" className="underline hover:text-blue-700">Privacy Policy</Link>.
                   </p>
                 </div>
               </form>

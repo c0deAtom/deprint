@@ -24,13 +24,11 @@ export default async function Home({
       </div>
       
       {/* Main Content - Adjusted for fixed sidebar */}
-      <div className="flex-1 md:ml-64">
+      <div className="flex-1 md:ml-64 mt-10">
         <main className="flex-1 flex flex-col w-full">
           <ProductSearch products={products} />
         </main>
-        <footer className="w-full py-6 border-t border-gradient-warm text-center text-xs text-muted-foreground bg-white/80 backdrop-blur-sm">
-          © {new Date().getFullYear()} deprint2. All rights reserved.
-        </footer>
+       
       </div>
     </div>
   );

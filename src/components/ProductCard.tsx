@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { JsonValue } from "@prisma/client/runtime/library";
 import BuyNowButton from "@/components/BuyNowButton";
 import CartItem from "@/components/CartItem";
-import { Star, ShoppingBag } from "lucide-react";
+import { Star, ShoppingBag, PlayCircle } from "lucide-react";
 
 interface ProductCardProps {
   product: {
@@ -24,40 +24,64 @@ interface ProductCardProps {
 
 export default function ProductCard({ product, className }: ProductCardProps) {
   const [index, setIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const images = Array.isArray(product.imageUrls) ? product.imageUrls : [];
   const hasMultiple = images.length > 1;
 
-  const next = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    e.nativeEvent.stopImmediatePropagation();
-    setIndex((i) => (i + 1) % images.length);
+  const navigate = (direction: 'next' | 'prev') => {
+    setIsPlaying(false);
+    if (direction === 'next') {
+      setIndex((i) => (i + 1) % images.length);
+    } else {
+      setIndex((i) => (i - 1 + images.length) % images.length);
+    }
   };
-  const prev = (e: React.MouseEvent) => {
+
+  const handlePlay = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    e.nativeEvent.stopImmediatePropagation();
-    setIndex((i) => (i - 1 + images.length) % images.length);
+    if (videoRef.current) {
+      videoRef.current.play();
+      setIsPlaying(true);
+    }
   };
 
   return (
     <Card className={`p-6 flex flex-col h-full group hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 bg-white/90 backdrop-blur-sm border-0 shadow-lg ${className || ''}`}>
       <div className="flex-1 flex flex-col">
         {images.length > 0 ? (
-          <div className="relative w-full aspect-square mb-6 overflow-hidden rounded-xl">
-            <Link href={`/products/${product.id}`} className="block w-full h-full">
+          <div className="relative w-full aspect-square mb-6 overflow-hidden rounded-xl flex items-center justify-center bg-black">
+            <Link href={`/products/${product.id}`} className="block w-full h-full" onClick={(e) => isPlaying && e.preventDefault()}>
               {(() => {
                 const currentMedia = images[index] as string;
                 const isVideo = currentMedia.match(/\.(mp4|webm|mov|avi)$/i);
                 
                 if (isVideo) {
                   return (
-                    <video
-                      src={currentMedia}
-                      className="w-full h-full object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
-                      muted
-                      loop
-                    />
+                    <div className="relative w-full h-full flex items-center justify-center">
+                      <video
+                        ref={videoRef}
+                        src={currentMedia}
+                        className="w-full h-full object-contain rounded-xl"
+                        loop
+                        onEnded={() => setIsPlaying(false)}
+                        onPause={() => setIsPlaying(false)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if(isPlaying) videoRef.current?.pause();
+                        }}
+                      />
+                      {!isPlaying && (
+                        <div 
+                          className="absolute inset-0 flex items-center justify-center bg-black/30 cursor-pointer transition-opacity group-hover:opacity-100 opacity-0"
+                          onClick={handlePlay}
+                        >
+                          <PlayCircle className="w-16 h-16 text-white/80 hover:text-white transition-all" />
+                        </div>
+                      )}
+                    </div>
                   );
                 } else {
                   return (
@@ -70,19 +94,17 @@ export default function ProductCard({ product, className }: ProductCardProps) {
                   );
                 }
               })()}
-              {/* Hover overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl" />
             </Link>
             {hasMultiple && (
               <>
                 <button
-                  onClick={prev}
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate('prev'); }}
                   className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 rounded-full w-8 h-8 flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 z-10"
                   aria-label="Previous media"
                   tabIndex={-1}
                 >&#8592;</button>
                 <button
-                  onClick={next}
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate('next'); }}
                   className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 rounded-full w-8 h-8 flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 z-10"
                   aria-label="Next media"
                   tabIndex={-1}

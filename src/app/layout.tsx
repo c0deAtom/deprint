@@ -4,6 +4,7 @@ import "./globals.css";
 import { ReactNode } from "react";
 import ConditionalNavbar from "@/components/ConditionalNavbar";
 import Providers from "./providers";
+import Footer from "@/components/Footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,13 +27,16 @@ export default async function RootLayout({
   children: ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className="h-full">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased pt-11`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen`}
       >
         <Providers>
           <ConditionalNavbar />
-          {children}
+          <main className="flex-grow">
+            {children}
+          </main>
+          <Footer />
         </Providers>
       </body>
     </html>

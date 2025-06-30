@@ -39,9 +39,7 @@ export default async function ProductsPage({
           </div>
         )}
       </main>
-      <footer className="w-full py-6 border-t text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} deprint2. All rights reserved.
-      </footer>
+    
     </div>
   );
 } 
