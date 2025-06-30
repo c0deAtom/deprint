@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, User, Menu, X, LogOut, Package, Sidebar, ChevronDown } from "lucide-react";
+import { ShoppingCart, User, Menu, X, LogOut, Package, Sidebar, ChevronDown, Loader2 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import {
   DropdownMenu,
@@ -16,7 +16,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export default function Navbar() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const { getCartCount } = useCart();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -129,7 +129,11 @@ export default function Navbar() {
               </Button>
             </Link>
             {/* Custom Profile Popover */}
-            {session?.user ? (
+            {status === "loading" ? (
+              <div className="flex items-center justify-center h-10 w-24">
+                <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+              </div>
+            ) : status === "authenticated" && session?.user ? (
               <div className="relative">
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full" onClick={() => setShowProfileMenu(v => !v)}>
                   <Avatar className="h-8 w-8">
@@ -155,14 +159,14 @@ export default function Navbar() {
                   </div>
                 )}
               </div>
-            ) : (
+            ) : status === "unauthenticated" ? (
               <Link href="/api/auth/signin">
                 <Button size="sm">
                   <User className="w-4 h-4 mr-2" />
                   Sign In
                 </Button>
               </Link>
-            )}
+            ) : null}
           </div>
 
           {/* Mobile Actions - Right side */}
@@ -180,7 +184,11 @@ export default function Navbar() {
             </Link>
 
             {/* Mobile User Menu */}
-            {session?.user ? (
+            {status === "loading" ? (
+              <div className="flex items-center justify-center h-10 w-24">
+                <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+              </div>
+            ) : status === "authenticated" && session?.user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
@@ -222,14 +230,14 @@ export default function Navbar() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            ) : (
+            ) : status === "unauthenticated" ? (
               <Link href="/api/auth/signin">
                 <Button size="sm">
                   <User className="w-4 h-4 mr-2" />
                   Sign In
                 </Button>
               </Link>
-            )}
+            ) : null}
 
             {/* Mobile Menu Button */}
             <Button
@@ -301,7 +309,11 @@ export default function Navbar() {
               </Link>
 
               {/* Mobile User Actions */}
-              {session?.user ? (
+              {status === "loading" ? (
+                <div className="flex items-center justify-center h-10 w-24">
+                  <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                </div>
+              ) : status === "authenticated" && session?.user ? (
                 <div className="flex flex-col space-y-2">
                   <div className="flex items-center space-x-2 py-2">
                     <Avatar className="h-8 w-8">
@@ -347,7 +359,7 @@ export default function Navbar() {
                     Sign Out
                   </Button>
                 </div>
-              ) : (
+              ) : status === "unauthenticated" ? (
                 <Link
                   href="/api/auth/signin"
                   onClick={() => setIsMenuOpen(false)}
@@ -357,7 +369,7 @@ export default function Navbar() {
                     Sign In
                   </Button>
                 </Link>
-              )}
+              ) : null}
             </div>
           </div>
         )}
@@ -428,7 +440,7 @@ export default function Navbar() {
             >
               Cart
             </Link>
-            {session?.user && (
+            {status === "loading" ? null : status === "authenticated" && session?.user && (
               <>
                 <Link 
                   href="/profile" 
