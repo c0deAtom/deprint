@@ -1034,10 +1034,10 @@ export default function AdminPage() {
                       name="imageUrls"
                       value={editForm.imageUrls}
                       onChange={handleEditChange}
-                      placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg"
+                      placeholder="https://example.com/image1.jpg, https://example.com/video1.mp4"
                     />
                     <p className="text-xs text-muted-foreground">
-                      Enter media URLs separated by commas. You can use both upload and links together.
+                      Enter image or video URLs separated by commas. Supports: JPG, PNG, WebP, GIF, MP4, WebM, MOV
                     </p>
                   </div>
                 </TabsContent>
@@ -1156,10 +1156,10 @@ export default function AdminPage() {
                       name="imageUrls"
                       value={form.imageUrls}
                       onChange={handleChange}
-                      placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg"
+                      placeholder="https://example.com/image1.jpg, https://example.com/video1.mp4"
                     />
                     <p className="text-xs text-muted-foreground">
-                      Enter media URLs separated by commas. You can use both upload and links together.
+                      Enter image or video URLs separated by commas. Supports: JPG, PNG, WebP, GIF, MP4, WebM, MOV
                     </p>
                   </div>
                 </TabsContent>

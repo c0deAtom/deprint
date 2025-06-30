@@ -37,12 +37,6 @@ export default function ImageUpload({
         formData.append("images", file);
       });
 
-      // Show specific message for GIFs
-      const hasGif = acceptedFiles.some(file => file.type === 'image/gif' || file.name.toLowerCase().endsWith('.gif'));
-      if (hasGif) {
-        toast.info("Uploading GIF files may take longer. Please be patient...");
-      }
-
       const response = await fetch("/api/upload", {
         method: "POST",
         body: formData,
@@ -56,12 +50,11 @@ export default function ImageUpload({
         toast.success(data.message);
       } else {
         const error = await response.json();
-        const errorMessage = error.details || error.error || "Upload failed";
-        toast.error(`Upload failed: ${errorMessage}`);
+        toast.error(error.error || "Upload failed");
       }
     } catch (error) {
       console.error("Upload error:", error);
-      toast.error("Upload failed. Please try again with a smaller file.");
+      toast.error("Upload failed");
     } finally {
       setUploading(false);
     }
@@ -71,21 +64,10 @@ export default function ImageUpload({
     onDrop,
     accept: {
       "image/*": [".jpeg", ".jpg", ".png", ".webp", ".gif"],
-      "video/*": [".mp4", ".mov", ".avi", ".webm", ".mkv"]
+      "video/*": [".mp4", ".webm", ".mov", ".avi"]
     },
-    maxSize: 4.5 * 1024 * 1024, // 4.5MB for Vercel compatibility
+    maxSize: 10 * 1024 * 1024, // 10MB for videos
     multiple: true,
-    onDropRejected: (rejectedFiles) => {
-      rejectedFiles.forEach(({ file, errors }) => {
-        errors.forEach((error) => {
-          if (error.code === 'file-too-large') {
-            toast.error(`File ${file.name} is too large. Maximum size is 4.5MB for deployment compatibility.`);
-          } else {
-            toast.error(`Error with ${file.name}: ${error.message}`);
-          }
-        });
-      });
-    },
   });
 
   const removeImage = (index: number) => {
@@ -120,10 +102,10 @@ export default function ImageUpload({
                   {uploading ? "Uploading..." : "Upload Product Media"}
                 </p>
                 <p className="text-sm text-gray-500 mb-4">
-                  Drag & drop images here, or click to select files
+                  Drag & drop images and videos here, or click to select files
                 </p>
                 <p className="text-xs text-gray-400">
-                  Supports: JPG, PNG, WebP, GIF, MP4, MOV, AVI, WebM, MKV (max 4.5MB each, up to {maxImages} files)
+                  Supports: JPG, PNG, WebP, GIF, MP4, WebM, MOV (max 10MB each, up to {maxImages} files)
                 </p>
               </div>
             )}
@@ -134,43 +116,40 @@ export default function ImageUpload({
       {/* Media Preview */}
       {images.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {images.map((media, index) => {
-            const isVideo = media.includes('.mp4') || media.includes('.mov') || media.includes('.avi') || media.includes('.webm') || media.includes('.mkv');
-            
-            return (
-              <Card key={index} className="relative group">
-                <CardContent className="p-2">
-                  <div className="aspect-square relative overflow-hidden rounded-lg">
-                    {isVideo ? (
-                      <video
-                        src={media}
-                        className="w-full h-full object-cover"
-                        muted
-                        loop
-                        onMouseEnter={(e) => e.currentTarget.play()}
-                        onMouseLeave={(e) => e.currentTarget.pause()}
-                      />
-                    ) : (
-                      <Image
-                        src={media}
-                        alt={`Product media ${index + 1}`}
-                        fill
-                        className="object-cover"
-                      />
-                    )}
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => removeImage(index)}
-                    >
-                      <X className="w-3 h-3" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+          {images.map((media, index) => (
+            <Card key={index} className="relative group">
+              <CardContent className="p-2">
+                <div className="aspect-square relative overflow-hidden rounded-lg">
+                  {media.match(/\.(mp4|webm|mov|avi)$/i) ? (
+                    // Video player
+                    <video
+                      src={media}
+                      className="w-full h-full object-cover"
+                      controls
+                      muted
+                      loop
+                    />
+                  ) : (
+                    // Image
+                    <Image
+                      src={media}
+                      alt={`Product media ${index + 1}`}
+                      fill
+                      className="object-cover"
+                    />
+                  )}
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => removeImage(index)}
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
 

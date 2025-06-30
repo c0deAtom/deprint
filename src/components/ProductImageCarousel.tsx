@@ -2,47 +2,34 @@
 import { useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Play, Pause } from "lucide-react";
 
 export default function ProductImageCarousel({ images, alt, className }: { images: string[]; alt: string; className?: string }) {
   const [index, setIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  
   if (!images || images.length === 0) {
     return <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400">No Media</div>;
   }
-  
-  const currentMedia = images[index];
-  const isVideo = currentMedia.includes('.mp4') || currentMedia.includes('.mov') || currentMedia.includes('.avi') || currentMedia.includes('.webm') || currentMedia.includes('.mkv');
   
   const prev = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     e.nativeEvent.stopImmediatePropagation();
     setIndex((i) => (i === 0 ? images.length - 1 : i - 1));
-    setIsPlaying(false);
   };
   const next = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     e.nativeEvent.stopImmediatePropagation();
     setIndex((i) => (i === images.length - 1 ? 0 : i + 1));
-    setIsPlaying(false);
   };
   const goToImage = (e: React.MouseEvent, i: number) => {
     e.preventDefault();
     e.stopPropagation();
     e.nativeEvent.stopImmediatePropagation();
     setIndex(i);
-    setIsPlaying(false);
   };
   
-  const togglePlay = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    e.nativeEvent.stopImmediatePropagation();
-    setIsPlaying(!isPlaying);
-  };
+  const currentMedia = images[index];
+  const isVideo = currentMedia.match(/\.(mp4|webm|mov|avi)$/i);
   
   return (
     <div className={`relative w-full h-full flex flex-col items-center ${className || ""}`}>
@@ -51,11 +38,9 @@ export default function ProductImageCarousel({ images, alt, className }: { image
           <video
             src={currentMedia}
             className="w-full h-full object-contain rounded"
+            controls
             muted
             loop
-            autoPlay={isPlaying}
-            onPlay={() => setIsPlaying(true)}
-            onPause={() => setIsPlaying(false)}
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -74,19 +59,6 @@ export default function ProductImageCarousel({ images, alt, className }: { image
             }}
           />
         )}
-        
-        {/* Video Play/Pause Button */}
-        {isVideo && (
-          <Button
-            size="icon"
-            variant="secondary"
-            className="absolute top-2 left-2 z-20 bg-black/50 hover:bg-black/70 text-white"
-            onClick={togglePlay}
-          >
-            {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-          </Button>
-        )}
-        
         {images.length > 1 && (
           <>
             <Button size="icon" variant="ghost" className="absolute left-2 top-1/2 -translate-y-1/2 z-10" onClick={prev} aria-label="Previous media">

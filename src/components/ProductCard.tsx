@@ -46,12 +46,30 @@ export default function ProductCard({ product, className }: ProductCardProps) {
         {images.length > 0 ? (
           <div className="relative w-full aspect-square mb-6 overflow-hidden rounded-xl">
             <Link href={`/products/${product.id}`} className="block w-full h-full">
-              <Image
-                src={images[index] as string}
-                alt={product.name}
-                fill
-                className="object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
-              />
+              {(() => {
+                const currentMedia = images[index] as string;
+                const isVideo = currentMedia.match(/\.(mp4|webm|mov|avi)$/i);
+                
+                if (isVideo) {
+                  return (
+                    <video
+                      src={currentMedia}
+                      className="w-full h-full object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
+                      muted
+                      loop
+                    />
+                  );
+                } else {
+                  return (
+                    <Image
+                      src={currentMedia}
+                      alt={product.name}
+                      fill
+                      className="object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
+                    />
+                  );
+                }
+              })()}
               {/* Hover overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl" />
             </Link>
@@ -60,13 +78,13 @@ export default function ProductCard({ product, className }: ProductCardProps) {
                 <button
                   onClick={prev}
                   className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 rounded-full w-8 h-8 flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 z-10"
-                  aria-label="Previous image"
+                  aria-label="Previous media"
                   tabIndex={-1}
                 >&#8592;</button>
                 <button
                   onClick={next}
                   className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 rounded-full w-8 h-8 flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 z-10"
-                  aria-label="Next image"
+                  aria-label="Next media"
                   tabIndex={-1}
                 >&#8594;</button>
                 <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-10">
