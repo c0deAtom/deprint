@@ -4,10 +4,10 @@ const nextConfig: NextConfig = {
   images: {
     domains: [
       "ssl.gstatic.com",
-      
+     
       "m.media-amazon.com", // Add any other domains you want to allow
       "res.cloudinary.com", 
-      // Cloudinary domain for uploaded images
+      "upload.wikimedia.org", // Cloudinary domain for uploaded images
       // e.g. "images.unsplash.com", "cdn.example.com"
     ],
   },
