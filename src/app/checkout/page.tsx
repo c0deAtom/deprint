@@ -11,6 +11,33 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 
+interface RazorpayOptions {
+  key: string;
+  amount: number;
+  currency: string;
+  name: string;
+  description: string;
+  order_id: string;
+  handler: (response: RazorpayHandlerResponse) => void;
+  prefill?: {
+    name?: string;
+    email?: string;
+    contact?: string;
+  };
+  notes?: Record<string, string>;
+  theme?: { color?: string };
+}
+
+interface RazorpayInstance {
+  open(): void;
+}
+
+declare global {
+  interface Window {
+    Razorpay: new (options: RazorpayOptions) => RazorpayInstance;
+  }
+}
+
 interface CheckoutForm {
   name: string;
   email: string;
@@ -28,10 +55,16 @@ interface AuthForm {
   confirmPassword: string;
 }
 
+interface RazorpayHandlerResponse {
+  razorpay_payment_id: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
+}
+
 export default function CheckoutPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const { items: cart, clearCart } = useCart();
+  const { items: cart, clearCart, getCartTotal } = useCart();
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [addressLoading, setAddressLoading] = useState(false);
@@ -112,7 +145,6 @@ export default function CheckoutPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
-    // Hide validation errors when user starts typing
     if (showValidation && e.target.value.trim()) {
       setShowValidation(false);
     }
@@ -212,49 +244,119 @@ export default function CheckoutPage() {
       toast.error("Please fill in all required fields");
       return;
     }
+    if (!validateMobile(form.mobile)) {
+      setShowValidation(true);
+      toast.error("Please enter a valid 10-digit mobile number");
+      return;
+    }
     setCheckoutLoading(true);
     try {
-      const res = await fetch("/api/checkout", {
+      const orderRes = await fetch("/api/razorpay", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          shippingInfo: {
-            name: form.name,
-            email: form.email,
-            address: {
-              line1: form.line1,
-              state: form.state,
-              city: form.city,
-              pincode: form.pincode,
-              mobile: form.mobile,
-            },
-          },
-          items: cart.map(item => ({
-            productId: item.id,
-            name: item.name,
-            price: item.price,
-            quantity: item.quantity,
-            imageUrls: Array.isArray(item.imageUrls) ? item.imageUrls.filter((url): url is string => typeof url === 'string') : undefined,
-          })),
+          amount: getCartTotal(),
         }),
       });
-      if (res.ok) {
-        const order = await res.json();
-        setCheckoutSuccess(true);
-        toast.success(`Order placed successfully! Order #${order.id}`);
-        clearCart();
-        window.dispatchEvent(new Event("cart-updated"));
-        router.push(`/orders/${order.id}`);
-      } else {
-        const error = await res.json();
-        toast.error(error.error || "Checkout failed");
+
+      if (!orderRes.ok) {
+        toast.error("Failed to create Razorpay order");
+        setCheckoutLoading(false);
+        return;
       }
+
+      const order = await orderRes.json();
+
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
+        amount: order.amount,
+        currency: order.currency,
+        name: "Your Company Name",
+        description: "Test Transaction",
+        order_id: order.id,
+        handler: async function (response: RazorpayHandlerResponse) {
+          const verificationRes = await fetch("/api/razorpay/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_signature: response.razorpay_signature,
+            }),
+          });
+
+          const verificationData = await verificationRes.json();
+
+          if (verificationData.success) {
+            const checkoutRes = await fetch("/api/checkout", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                shippingInfo: {
+                  name: form.name,
+                  email: form.email,
+                  address: {
+                    line1: form.line1,
+                    state: form.state,
+                    city: form.city,
+                    pincode: form.pincode,
+                    mobile: form.mobile,
+                  },
+                },
+                items: cart.map(item => ({
+                  productId: item.productId || item.id,
+                  name: item.name,
+                  price: item.price,
+                  quantity: item.quantity,
+                  imageUrls: Array.isArray(item.imageUrls) ? item.imageUrls.filter((url): url is string => typeof url === 'string') : undefined,
+                })),
+                paymentInfo: {
+                  id: response.razorpay_payment_id,
+                  status: "paid",
+                  method: "razorpay",
+                },
+              }),
+            });
+
+            if (checkoutRes.ok) {
+              const order = await checkoutRes.json();
+              setCheckoutSuccess(true);
+              toast.success(`Order placed successfully! Order #${order.id}`);
+              clearCart();
+              window.dispatchEvent(new Event("cart-updated"));
+              router.push(`/orders/${order.id}`);
+            } else {
+              const error = await checkoutRes.json();
+              toast.error(error.error || "Checkout failed after payment");
+            }
+          } else {
+            toast.error("Payment verification failed");
+          }
+        },
+        prefill: {
+          name: form.name,
+          email: form.email,
+          contact: form.mobile,
+        },
+        notes: {
+          address: `${form.line1}, ${form.city}, ${form.state} - ${form.pincode}`,
+        },
+        theme: {
+          color: "#3399cc",
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
     } catch (error) {
       console.error("Checkout error:", error);
-      toast.error("Checkout failed");
+      toast.error("An unexpected error occurred during checkout");
+    } finally {
+      setCheckoutLoading(false);
     }
-    setCheckoutLoading(false);
   };
+
+  const validateMobile = (mobile: string) => /^\d{10}$/.test(mobile);
 
   const total = cart.reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0);
   const shipping = 80; // Updated shipping rate to ₹80
@@ -528,17 +630,21 @@ export default function CheckoutPage() {
                     )}
                   </div>
                   <div>
-                    <Label htmlFor="mobile">Mobile *</Label>
+                    <Label htmlFor="mobile">Mobile Number</Label>
                     <Input
                       id="mobile"
                       name="mobile"
                       value={form.mobile}
                       onChange={handleInputChange}
+                      placeholder="Enter your mobile number"
                       required
-                      className={showValidation && !form.mobile.trim() ? "border-red-500 focus:border-red-500" : ""}
+                      className={showValidation && (!form.mobile || !validateMobile(form.mobile)) ? "border-red-500" : ""}
                     />
-                    {showValidation && !form.mobile.trim() && (
-                      <p className="text-red-500 text-sm mt-1">Mobile number is required</p>
+                    {showValidation && !form.mobile && (
+                      <p className="text-red-500 text-sm">Mobile number is required</p>
+                    )}
+                    {showValidation && form.mobile && !validateMobile(form.mobile) && (
+                      <p className="text-red-500 text-sm">Please enter a valid 10-digit mobile number</p>
                     )}
                   </div>
                 </div>

@@ -14,6 +14,7 @@ import Image from "next/image";
 interface Order {
   id: string;
   status: string;
+  paymentStatus: string;
   total: number;
   createdAt: string;
   items: Array<{
@@ -217,9 +218,12 @@ export default function OrdersPage() {
                         </p>
                       </div>
                       <div className="flex items-center gap-3">
-                        <Badge className={getStatusColor(order.status)}>
+                        <Badge className={`${getStatusColor(order.status)} mr-2`}>
                           <span className="mr-1">{getStatusIcon(order.status)}</span>
                           {order.status}
+                        </Badge>
+                        <Badge variant={order.paymentStatus === 'PAID' ? 'success' : 'destructive'}>
+                          {order.paymentStatus}
                         </Badge>
                         <div className="text-right">
                           <div className="flex items-center gap-1 text-lg font-bold">

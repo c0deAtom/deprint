@@ -14,6 +14,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const shippingInfo = body.shippingInfo;
   const items = body.items;
+  const paymentInfo = body.paymentInfo;
 
   if (!Array.isArray(items) || items.length === 0) {
     return NextResponse.json({ error: "No items in cart" }, { status: 400 });
@@ -39,6 +40,9 @@ export async function POST(req: NextRequest) {
         status: "CONFIRMED",
         total: grandTotal,
         shippingAddress: shippingInfo,
+        paymentId: paymentInfo?.id,
+        paymentStatus: paymentInfo?.status === "paid" ? "PAID" : "UNPAID",
+        paymentMethod: paymentInfo?.method,
         items: {
           create: items.map(item => ({
             productId: item.productId,

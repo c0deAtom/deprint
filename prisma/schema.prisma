@@ -76,6 +76,9 @@ model Order {
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
   shippingAddress Json?
+  paymentId       String?
+  paymentStatus   PaymentStatus @default(UNPAID)
+  paymentMethod   String?
   user            User?       @relation(fields: [userId], references: [id])
   items           OrderItem[]
 }
@@ -126,4 +129,9 @@ enum OrderStatus {
   SHIPPED
   DELIVERED
   CANCELLED
+}
+
+enum PaymentStatus {
+  PAID
+  UNPAID
 }

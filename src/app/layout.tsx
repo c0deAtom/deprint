@@ -5,6 +5,7 @@ import { ReactNode } from "react";
 import ConditionalNavbar from "@/components/ConditionalNavbar";
 import Providers from "./providers";
 import Footer from "@/components/Footer";
+import Script from "next/script";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,6 +39,7 @@ export default async function RootLayout({
           </main>
           <Footer />
         </Providers>
+        <Script src="https://checkout.razorpay.com/v1/checkout.js" />
       </body>
     </html>
   );
