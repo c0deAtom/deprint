@@ -24,7 +24,7 @@ export default async function Home({
       </div>
       
       {/* Main Content - Adjusted for fixed sidebar */}
-      <div className="flex-1 md:ml-64 mt-10">
+      <div className="flex-1 md:ml-64 ">
         <main className="flex-1 flex flex-col w-full">
           <ProductSearch products={products} />
         </main>

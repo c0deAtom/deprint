@@ -14,7 +14,7 @@ export default async function ProductsPage({
   });
 
   return (
-    <div className="min-h-screen flex flex-col py-10">
+    <div className="min-h-screen flex flex-col ">
       <main className="flex-1 flex flex-col items-center justify-center px-4 md:px-8">
         <h1 className="text-3xl md:text-5xl font-bold mb-8 text-center">
           {category ? `${category} Products` : "All Products"}

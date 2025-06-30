@@ -34,7 +34,7 @@ export default async function RootLayout({
       >
         <Providers>
           <ConditionalNavbar />
-          <main className="flex-grow">
+          <main className="flex-grow pt-10 ">
             {children}
           </main>
           <Footer />

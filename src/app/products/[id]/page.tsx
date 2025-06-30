@@ -15,7 +15,7 @@ export default async function Page({
   if (!product) return notFound();
 
   return (
-    <main className="flex flex-col items-center py-12 px-4 min-h-screen">
+    <main className="flex flex-col items-center py- px-4 min-h-screen">
       <div className="w-full max-w-8xl bg-white rounded-lg shadow flex flex-col md:flex-row gap-8 p-6 md:p-12">
         {/* Image carousel left (or top on mobile) */}
         <div className="md:w-1/2 w-full flex items-center justify-center">
