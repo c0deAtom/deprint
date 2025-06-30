@@ -20,7 +20,7 @@ export default function ReturnPolicyPage() {
               <ThumbsUp className="w-6 h-6 mr-3 text-blue-600" />
               30-Day Return Window
             </h2>
-            <p>Our policy lasts for <strong>30 days</strong>. If 30 days have gone by since your purchase, unfortunately, we can&apos;t offer you a refund or exchange.</p>
+            <p>Our policy lasts for <strong>30 days</strong>. If 5 days have gone by since your purchase, unfortunately, we can&apos;t offer you a refund or exchange.</p>
           </section>
 
           <section className="space-y-4">
