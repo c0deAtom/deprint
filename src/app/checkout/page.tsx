@@ -157,6 +157,7 @@ export default function CheckoutPage() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    setShowValidation(true);
     if (authForm.password !== authForm.confirmPassword) {
       toast.error("Passwords do not match");
       return;
@@ -207,6 +208,7 @@ export default function CheckoutPage() {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    setShowValidation(true);
     setAuthLoading(true);
     try {
       const result = await signIn("credentials", {
@@ -243,6 +245,11 @@ export default function CheckoutPage() {
     if (!form.name || !form.email || !form.line1 || !form.state || !form.city || !form.pincode || !form.mobile) {
       setShowValidation(true);
       toast.error("Please fill in all required fields");
+      return;
+    }
+    if (!validatePincode(form.pincode)) {
+      setShowValidation(true);
+      toast.error("Please enter a valid 6-digit pincode");
       return;
     }
     if (!validateMobile(form.mobile)) {
@@ -358,6 +365,7 @@ export default function CheckoutPage() {
   };
 
   const validateMobile = (mobile: string) => /^\d{10}$/.test(mobile);
+  const validatePincode = (pincode: string) => /^\d{6}$/.test(pincode);
 
   const total = cart.reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0);
   const shipping = 80; // Updated shipping rate to ₹80
@@ -451,7 +459,11 @@ export default function CheckoutPage() {
                       value={authForm.name}
                       onChange={handleAuthInputChange}
                       required
+                      className={showValidation && !authForm.name.trim() ? "border-red-500 focus:border-red-500" : ""}
                     />
+                    {showValidation && !authForm.name.trim() && (
+                      <p className="text-red-500 text-sm mt-1">Full name is required</p>
+                    )}
                   </div>
                 )}
                 
@@ -464,7 +476,11 @@ export default function CheckoutPage() {
                     value={authForm.email}
                     onChange={handleAuthInputChange}
                     required
+                    className={showValidation && !authForm.email.trim() ? "border-red-500 focus:border-red-500" : ""}
                   />
+                  {showValidation && !authForm.email.trim() && (
+                    <p className="text-red-500 text-sm mt-1">Email is required</p>
+                  )}
                 </div>
                 
                 <div>
@@ -476,7 +492,14 @@ export default function CheckoutPage() {
                     value={authForm.password}
                     onChange={handleAuthInputChange}
                     required
+                    className={showValidation && !authForm.password.trim() ? "border-red-500 focus:border-red-500" : ""}
                   />
+                  {showValidation && !authForm.password.trim() && (
+                    <p className="text-red-500 text-sm mt-1">Password is required</p>
+                  )}
+                  {showValidation && authForm.password.length > 0 && authForm.password.length < 6 && (
+                    <p className="text-red-500 text-sm mt-1">Password must be at least 6 characters</p>
+                  )}
                 </div>
                 
                 {isSignUp && (
@@ -489,7 +512,14 @@ export default function CheckoutPage() {
                       value={authForm.confirmPassword}
                       onChange={handleAuthInputChange}
                       required
+                      className={showValidation && (!authForm.confirmPassword.trim() || authForm.confirmPassword !== authForm.password) ? "border-red-500 focus:border-red-500" : ""}
                     />
+                    {showValidation && !authForm.confirmPassword.trim() && (
+                      <p className="text-red-500 text-sm mt-1">Confirm password is required</p>
+                    )}
+                    {showValidation && authForm.confirmPassword && authForm.confirmPassword !== authForm.password && (
+                      <p className="text-red-500 text-sm mt-1">Passwords do not match</p>
+                    )}
                   </div>
                 )}
                 
@@ -643,10 +673,13 @@ export default function CheckoutPage() {
                       value={form.pincode}
                       onChange={handleInputChange}
                       required
-                      className={showValidation && !form.pincode.trim() ? "border-red-500 focus:border-red-500" : ""}
+                      className={showValidation && (!form.pincode.trim() || !validatePincode(form.pincode)) ? "border-red-500 focus:border-red-500" : ""}
                     />
                     {showValidation && !form.pincode.trim() && (
                       <p className="text-red-500 text-sm mt-1">Pincode is required</p>
+                    )}
+                    {showValidation && form.pincode && !validatePincode(form.pincode) && (
+                      <p className="text-red-500 text-sm mt-1">Please enter a valid 6-digit pincode</p>
                     )}
                   </div>
                   <div>
