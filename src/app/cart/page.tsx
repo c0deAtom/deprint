@@ -108,19 +108,7 @@ export default function CartPage() {
 
   if (loading) {
     return (
-      <main className="flex flex-col items-center px-4 min-h-screen">
-        <div className="text-center">
-          <p className="text-red-600 mb-4">Error loading cart: {loading}</p>
-          <Button onClick={() => refreshCart()}>Retry</Button>
-        </div>
-      </main>
-    );
-  }
-
-  return (
-    <main className="flex flex-col items-center px-4 my-10 min-h-screen">
-      <h1 className="text-2xl font-bold mb-6">My Cart</h1>
-      {loading ? (
+      <main className="flex flex-col items-center px-4 min-h-screen py-10">
         <div className="w-full max-w-4xl space-y-6">
           {/* Bulk Actions Skeleton */}
           <Card className="p-4">
@@ -131,10 +119,8 @@ export default function CartPage() {
               </div>
             </div>
           </Card>
-          
           {/* Cart Items Skeleton */}
           <CartItemSkeletonList count={3} />
-          
           {/* Order Summary Skeleton */}
           <Card className="p-6">
             <div className="flex justify-between items-center mb-4">
@@ -147,7 +133,14 @@ export default function CartPage() {
             </div>
           </Card>
         </div>
-      ) : cartItems.length === 0 ? (
+      </main>
+    );
+  }
+
+  if (!loading && cartItems.length === 0) {
+    return (
+      <main className="flex flex-col items-center px-4 my-10 min-h-screen">
+        <h1 className="text-2xl font-bold mb-6">My Cart</h1>
         <div className="text-center">
           <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <ShoppingCart className="w-12 h-12 text-gray-400" />
@@ -162,196 +155,201 @@ export default function CartPage() {
             </Link>
           </div>
         </div>
-      ) : (
-        <div className="w-full max-w-4xl space-y-6">
-          {/* Bulk Actions */}
-          <Card className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <Checkbox
-                  id="select-all-cart"
-                  checked={selectedItems.size === cartItems.length && cartItems.length > 0}
-                  onCheckedChange={handleSelectAll}
-                  disabled={loading}
-                />
-                <label
-                  htmlFor="select-all-cart"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Select All ({cartItems.length} items)
-                </label>
-              </div>
-              
-              {selectedItems.size > 0 && (
-                <div className="flex items-center gap-4">
-                  <span className="text-sm text-muted-foreground">
-                    {selectedItems.size} selected • ₹{selectedTotal.toFixed(2)}
-                  </span>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={handleBulkRemove}
-                    disabled={bulkRemoving || loading}
-                  >
-                    {bulkRemoving ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Removing...
-                      </>
-                    ) : (
-                      <>
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Remove Selected
-                      </>
-                    )}
-                  </Button>
-                </div>
-              )}
-            </div>
-          </Card>
+      </main>
+    );
+  }
 
-          {/* Cart Items */}
-          <div className="grid grid-cols-1 gap-6">
-            {cartItems.map((item) => (
-              <Card key={item.id} className="p-4">
-                <div className="flex gap-4">
-                  <div className="flex items-start space-x-3">
-                    <Checkbox
-                      id={`cart-item-${item.id}`}
-                      checked={selectedItems.has(item.id)}
-                      onCheckedChange={() => handleItemToggle(item.id)}
-                      disabled={loading || removingItems.has(item.id)}
+  return (
+    <main className="flex flex-col items-center px-4 my-10 min-h-screen">
+      <h1 className="text-2xl font-bold mb-6">My Cart</h1>
+      <div className="w-full max-w-4xl space-y-6">
+        {/* Bulk Actions */}
+        <Card className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Checkbox
+                id="select-all-cart"
+                checked={selectedItems.size === cartItems.length && cartItems.length > 0}
+                onCheckedChange={handleSelectAll}
+                disabled={loading}
+              />
+              <label
+                htmlFor="select-all-cart"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Select All ({cartItems.length} items)
+              </label>
+            </div>
+            
+            {selectedItems.size > 0 && (
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-muted-foreground">
+                  {selectedItems.size} selected • ₹{selectedTotal.toFixed(2)}
+                </span>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleBulkRemove}
+                  disabled={bulkRemoving || loading}
+                >
+                  {bulkRemoving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Removing...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Remove Selected
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+          </div>
+        </Card>
+
+        {/* Cart Items */}
+        <div className="grid grid-cols-1 gap-6">
+          {cartItems.map((item) => (
+            <Card key={item.id} className="p-4">
+              <div className="flex gap-4">
+                <div className="flex items-start space-x-3">
+                  <Checkbox
+                    id={`cart-item-${item.id}`}
+                    checked={selectedItems.has(item.id)}
+                    onCheckedChange={() => handleItemToggle(item.id)}
+                    disabled={loading || removingItems.has(item.id)}
+                  />
+                </div>
+                
+                <div className="relative w-24 h-24 flex-shrink-0">
+                  {Array.isArray(item.imageUrls) && typeof item.imageUrls[0] === 'string' && item.imageUrls[0] && (
+                    <Image
+                      src={item.imageUrls[0]}
+                      alt={item.name}
+                      width={64}
+                      height={64}
+                      className="object-contain rounded"
                     />
-                  </div>
-                  
-                  <div className="relative w-24 h-24 flex-shrink-0">
-                    {Array.isArray(item.imageUrls) && typeof item.imageUrls[0] === 'string' && item.imageUrls[0] && (
-                      <Image
-                        src={item.imageUrls[0]}
-                        alt={item.name}
-                        width={64}
-                        height={64}
-                        className="object-contain rounded"
-                      />
-                    )}
-                  </div>
-                  
-                  <div className="flex-1 flex flex-col justify-between">
-                    <div>
-                      <h3 className="font-semibold text-lg mb-2">{item.name}</h3>
-                      <div className="text-lg font-medium text-green-600 mb-2">
-                        ₹{item.price.toFixed(2)}
-                      </div>
-                      
-                      {/* Quantity Controls */}
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="text-sm font-medium text-muted-foreground">Quantity:</span>
-                        <div className="flex items-center border rounded-md">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 rounded-none border-r"
-                            onClick={() => handleQuantityUpdate(item.id, item.quantity - 1)}
-                            disabled={updatingQuantities.has(item.id) || loading || bulkRemoving || item.quantity <= 1}
-                          >
-                            {updatingQuantities.has(item.id) ? (
-                              <Loader2 className="w-3 h-3 animate-spin" />
-                            ) : (
-                              "−"
-                            )}
-                          </Button>
-                          <span className="px-3 py-1 text-sm font-medium min-w-[2rem] text-center">
-                            {item.quantity}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 rounded-none border-l"
-                            onClick={() => handleQuantityUpdate(item.id, item.quantity + 1)}
-                            disabled={updatingQuantities.has(item.id) || loading || bulkRemoving}
-                          >
-                            {updatingQuantities.has(item.id) ? (
-                              <Loader2 className="w-3 h-3 animate-spin" />
-                            ) : (
-                              "+"
-                            )}
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      <div className="text-sm font-medium">
-                        Total: ₹{((item.price * item.quantity).toFixed(2))}
+                  )}
+                </div>
+                
+                <div className="flex-1 flex flex-col justify-between">
+                  <div>
+                    <h3 className="font-semibold text-lg mb-2">{item.name}</h3>
+                    <div className="text-lg font-medium text-green-600 mb-2">
+                      ₹{item.price.toFixed(2)}
+                    </div>
+                    
+                    {/* Quantity Controls */}
+                    <div className="flex items-center gap-3 mb-2">
+                      <span className="text-sm font-medium text-muted-foreground">Quantity:</span>
+                      <div className="flex items-center border rounded-md">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 rounded-none border-r"
+                          onClick={() => handleQuantityUpdate(item.id, item.quantity - 1)}
+                          disabled={updatingQuantities.has(item.id) || loading || bulkRemoving || item.quantity <= 1}
+                        >
+                          {updatingQuantities.has(item.id) ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            "−"
+                          )}
+                        </Button>
+                        <span className="px-3 py-1 text-sm font-medium min-w-[2rem] text-center">
+                          {item.quantity}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 rounded-none border-l"
+                          onClick={() => handleQuantityUpdate(item.id, item.quantity + 1)}
+                          disabled={updatingQuantities.has(item.id) || loading || bulkRemoving}
+                        >
+                          {updatingQuantities.has(item.id) ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            "+"
+                          )}
+                        </Button>
                       </div>
                     </div>
                     
-                    <div className="mt-4">
-                      <Button 
-                        variant="destructive" 
-                        size="sm" 
-                        onClick={() => handleRemoveItem(item.id)}
-                        disabled={removingItems.has(item.id) || loading || bulkRemoving || updatingQuantities.has(item.id)}
-                      >
-                        {removingItems.has(item.id) ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Removing...
-                          </>
-                        ) : (
-                          <>
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Remove
-                          </>
-                        )}
-                      </Button>
+                    <div className="text-sm font-medium">
+                      Total: ₹{((item.price * item.quantity).toFixed(2))}
                     </div>
                   </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-          
-          {/* Order Summary */}
-          <Card className="p-6">
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h2 className="text-xl font-semibold">Order Summary</h2>
-              </div>
-              
-              {/* Price Breakdown */}
-              <div className="space-y-2 border-t pt-4">
-                <div className="flex justify-between text-sm">
-                  <span>Subtotal ({cartItems.length} items)</span>
-                  <span>₹{total.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>Shipping</span>
-                  <span>₹{shipping.toFixed(2)}</span>
-                </div>
-                <div className="border-t pt-2 flex justify-between font-bold text-lg">
-                  <span>Total</span>
-                  <span>₹{grandTotal.toFixed(2)}</span>
+                  
+                  <div className="mt-4">
+                    <Button 
+                      variant="destructive" 
+                      size="sm" 
+                      onClick={() => handleRemoveItem(item.id)}
+                      disabled={removingItems.has(item.id) || loading || bulkRemoving || updatingQuantities.has(item.id)}
+                    >
+                      {removingItems.has(item.id) ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Removing...
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Remove
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </div>
-              
-              <div className="flex gap-3">
-                <Button 
-                  asChild
-                  disabled={loading || bulkRemoving}
-                  className="flex-1"
-                  size="lg"
-                >
-                  <a href="/checkout">Checkout</a>
-                </Button>
-              </div>
-              {!session?.user && (
-                <p className="text-sm text-muted-foreground text-center">
-                  You&apos;ll need to create an account or sign in to complete your purchase
-                </p>
-              )}
-            </div>
-          </Card>
+            </Card>
+          ))}
         </div>
-      )}
+        
+        {/* Order Summary */}
+        <Card className="p-6">
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold">Order Summary</h2>
+            </div>
+            
+            {/* Price Breakdown */}
+            <div className="space-y-2 border-t pt-4">
+              <div className="flex justify-between text-sm">
+                <span>Subtotal ({cartItems.length} items)</span>
+                <span>₹{total.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span>Shipping</span>
+                <span>₹{shipping.toFixed(2)}</span>
+              </div>
+              <div className="border-t pt-2 flex justify-between font-bold text-lg">
+                <span>Total</span>
+                <span>₹{grandTotal.toFixed(2)}</span>
+              </div>
+            </div>
+            
+            <div className="flex gap-3">
+              <Button 
+                asChild
+                disabled={loading || bulkRemoving}
+                className="flex-1"
+                size="lg"
+              >
+                <a href="/checkout">Checkout</a>
+              </Button>
+            </div>
+            {!session?.user && (
+              <p className="text-sm text-muted-foreground text-center">
+                You&apos;ll need to create an account or sign in to complete your purchase
+              </p>
+            )}
+          </div>
+        </Card>
+      </div>
     </main>
   );
 } 

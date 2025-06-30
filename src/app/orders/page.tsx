@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Package, Calendar, Eye, ShoppingBag, Filter, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Order {
   id: string;
@@ -135,6 +136,47 @@ export default function OrdersPage() {
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold mb-2">My Orders</h1>
             <p className="text-muted-foreground">Loading your orders...</p>
+          </div>
+          <div className="space-y-6">
+            {[...Array(3)].map((_, i) => (
+              <Card key={i} className="overflow-hidden">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Skeleton className="h-6 w-32 mb-2" />
+                      <Skeleton className="h-4 w-48 mb-2" />
+                      <Skeleton className="h-4 w-40" />
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="h-6 w-20 rounded" />
+                      <Skeleton className="h-6 w-16 rounded" />
+                      <div className="text-right">
+                        <Skeleton className="h-6 w-16 mb-1" />
+                        <Skeleton className="h-4 w-12" />
+                      </div>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {[...Array(3)].map((_, j) => (
+                        <div key={j} className="flex items-center gap-3 p-3 border rounded-lg">
+                          <Skeleton className="w-12 h-12 rounded" />
+                          <div className="flex-1 min-w-0">
+                            <Skeleton className="h-4 w-24 mb-2" />
+                            <Skeleton className="h-3 w-16" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex justify-end pt-4 border-t">
+                      <Skeleton className="h-8 w-24" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </main>

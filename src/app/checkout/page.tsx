@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface RazorpayOptions {
   key: string;
@@ -64,7 +65,7 @@ interface RazorpayHandlerResponse {
 export default function CheckoutPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const { items: cart, clearCart, getCartTotal } = useCart();
+  const { items: cart, clearCart, getCartTotal, loading: cartLoading } = useCart();
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [addressLoading, setAddressLoading] = useState(false);
@@ -362,11 +363,30 @@ export default function CheckoutPage() {
   const shipping = 80; // Updated shipping rate to ₹80
   const grandTotal = total + shipping;
 
-  if (loading || status === "loading") {
+  if (loading || status === "loading" || cartLoading) {
     return (
-      <main className="flex flex-col items-center px-4 py-10 min-h-screen">
-        <div className="text-center">
-         
+      <main className="flex flex-col items-center px-4 min-h-screen py-10">
+        <div className="w-full max-w-2xl">
+          <Card className="p-8">
+            <CardHeader>
+              <Skeleton className="h-8 w-40 mb-2" />
+              <Skeleton className="h-4 w-32 mb-4" />
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <Skeleton className="h-12 w-full mb-2" />
+                <Skeleton className="h-12 w-full mb-2" />
+                <Skeleton className="h-12 w-full mb-2" />
+                <Skeleton className="h-12 w-full mb-2" />
+                <Skeleton className="h-12 w-full mb-2" />
+                <Skeleton className="h-12 w-full mb-2" />
+                <Skeleton className="h-12 w-full mb-2" />
+                <div className="flex justify-end mt-6">
+                  <Skeleton className="h-10 w-32" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </main>
     );
