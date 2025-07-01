@@ -23,6 +23,8 @@ export default function Navbar() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showPolicies, setShowPolicies] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const sidebarRef = useRef<HTMLDivElement>(null);
 
   const cartCount = getCartCount();
 
@@ -56,6 +58,32 @@ export default function Navbar() {
     }
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showProfileMenu]);
+
+  // Auto-close mobile menu, sidebar, and policies on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent | TouchEvent) {
+      // Mobile menu
+      if (isMenuOpen && mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+      // Sidebar
+      if (isSidebarOpen && sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
+        setIsSidebarOpen(false);
+      }
+      // Policies dropdown (mobile)
+      if (showPolicies && mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
+        setShowPolicies(false);
+      }
+    }
+    if (isMenuOpen || isSidebarOpen || showPolicies) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("touchstart", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
+  }, [isMenuOpen, isSidebarOpen, showPolicies]);
 
   return (
     <nav className="bg-white shadow-sm border-b fixed top-0 left-0 right-0 z-50">
@@ -252,7 +280,7 @@ export default function Navbar() {
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="md:hidden py-4 border-t">
+          <div ref={mobileMenuRef} className="md:hidden py-4 border-t">
             <div className="flex flex-col space-y-4">
               <Link
                 href="/"
@@ -381,7 +409,7 @@ export default function Navbar() {
       )}
 
       {/* Mobile Sidebar */}
-      <div className={`md:hidden fixed top-0 left-0 h-full w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out z-50 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <div ref={sidebarRef} className={`md:hidden fixed top-0 left-0 h-full w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out z-50 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="text-lg font-semibold">Categories</h2>
           <Button

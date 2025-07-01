@@ -15,14 +15,14 @@ export default async function ProductsPage({
 
   return (
     <div className="min-h-screen flex flex-col ">
-      <main className="flex-1 flex flex-col items-center justify-center px-4 md:px-8">
-        <h1 className="text-3xl md:text-5xl font-bold mb-8 text-center">
+      <main className="flex-1 flex flex-col items-top  justify-top py-10 px-4 md:px-8 py-10">
+        <h1 className="text-3xl md:text-5xl font-bold mb-5 text-center">
           {category ? `${category} Products` : "All Products"}
         </h1>
         <p className="text-muted-foreground text-center mb-12 max-w-2xl">
           {category 
             ? `Browse our collection of ${category.toLowerCase()} products.`
-            : "Browse our full collection of high-quality products."
+            : ""
           }
         </p>
         {products.length > 0 ? (
