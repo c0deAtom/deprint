@@ -341,6 +341,10 @@ export default function CheckoutPage() {
             toast.error("Payment verification failed");
           }
         },
+        ondismiss: function () {
+          toast.info("Payment was cancelled. You can try again.");
+          // No order is created, cart remains as is
+        },
         prefill: {
           name: form.name,
           email: form.email,

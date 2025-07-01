@@ -32,6 +32,12 @@ export async function POST(req: NextRequest) {
     // Generate custom order ID
     const orderId = await generateOrderId();
 
+    // Save the shipping address to the user's profile
+    await prisma.user.update({
+      where: { id: userId },
+      data: { address: shippingInfo.address ? { ...shippingInfo.address, name: shippingInfo.name, email: shippingInfo.email } : shippingInfo },
+    });
+
     // Create the order
     const confirmedOrder = await prisma.order.create({
       data: {
