@@ -19,6 +19,8 @@ model User {
   orders    Order[]
   sessions  Session[]
   cart      Cart?
+  comments  Comment[]
+  ratings   Rating[]
 }
 
 model Account {
@@ -66,6 +68,8 @@ model Product {
   updatedAt   DateTime    @updatedAt
   orderItems  OrderItem[]
   cartItems   CartItem[]
+  comments    Comment[]
+  ratings     Rating[]
 }
 
 model Order {
@@ -121,6 +125,31 @@ model CartItem {
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([cartId, productId])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  text      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  rating    Int?
+}
+
+model Rating {
+  id        String   @id @default(cuid())
+  value     Int      // 1 to 5
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+
+  @@unique([userId, productId])
 }
 
 enum OrderStatus {

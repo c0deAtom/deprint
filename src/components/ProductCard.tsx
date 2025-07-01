@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
@@ -28,6 +28,12 @@ export default function ProductCard({ product, className }: ProductCardProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const images = Array.isArray(product.imageUrls) ? product.imageUrls : [];
   const hasMultiple = images.length > 1;
+
+  // Fetch real average rating
+  const [average, setAverage] = useState<number | null>(null);
+  useEffect(() => {
+    fetch(`/api/products/${product.id}/rating`).then(res => res.json()).then(data => setAverage(data.average ?? null));
+  }, [product.id]);
 
   const navigate = (direction: 'next' | 'prev') => {
     setIsPlaying(false);
@@ -141,7 +147,9 @@ export default function ProductCard({ product, className }: ProductCardProps) {
               </div>
               <div className="flex items-center gap-1 text-yellow-500">
                 <Star className="w-4 h-4 fill-current" />
-                <span className="text-sm font-medium">4.8</span>
+                <span className="text-sm font-medium">
+                  {average !== null ? average.toFixed(1) : 'No rating'}
+                </span>
               </div>
             </div>
           </div>

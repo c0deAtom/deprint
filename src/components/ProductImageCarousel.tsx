@@ -33,11 +33,11 @@ export default function ProductImageCarousel({ images, alt, className }: { image
   
   return (
     <div className={`relative w-full h-full flex flex-col items-center ${className || ""}`}>
-      <div className="relative w-full aspect-square flex items-center justify-center">
+      <div className="relative w-full aspect-square flex items-center justify-center overflow-hidden">
         {isVideo ? (
           <video
             src={currentMedia}
-            className="w-full h-full object-contain rounded"
+            className="absolute inset-0 w-full h-full max-w-full max-h-full object-contain rounded"
             controls
             muted
             loop
@@ -71,15 +71,39 @@ export default function ProductImageCarousel({ images, alt, className }: { image
         )}
       </div>
       {images.length > 1 && (
-        <div className="flex gap-2 mt-2">
-          {images.map((_, i) => (
-            <button
-              key={i}
-              className={`w-2 h-2 rounded-full ${i === index ? "bg-primary" : "bg-gray-300"}`}
-              onClick={(e) => goToImage(e, i)}
-              aria-label={`Go to media ${i + 1}`}
-            />
-          ))}
+        <div className="flex gap-2 mt-4">
+          {images.map((img, i) => {
+            const isThumbVideo = img.match(/\.(mp4|webm|mov|avi)$/i);
+            return (
+              <button
+                key={i}
+                className={`relative w-16 h-16 rounded overflow-hidden border-2 ${i === index ? 'border-blue-500' : 'border-gray-200'}`}
+                onClick={e => goToImage(e, i)}
+                aria-label={`Go to media ${i + 1}`}
+              >
+                {isThumbVideo ? (
+                  <>
+                    <video
+                      src={img}
+                      className="w-full h-full object-cover"
+                      muted
+                      tabIndex={-1}
+                    />
+                    <span className="absolute bottom-1 right-1 bg-black/60 text-white text-xs px-1 py-0.5 rounded">▶</span>
+                  </>
+                ) : (
+                  <Image
+                    src={img}
+                    alt={alt}
+                    fill
+                    className="object-cover"
+                    unoptimized
+                    tabIndex={-1}
+                  />
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
