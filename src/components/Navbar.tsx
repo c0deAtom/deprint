@@ -13,7 +13,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
+interface SessionUser {
+  id: string;
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
+  profilePhoto?: string | null;
+}
 
 export default function Navbar() {
   const { data: session, status } = useSession();
@@ -165,16 +173,17 @@ export default function Navbar() {
               <div className="relative">
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full" onClick={() => setShowProfileMenu(v => !v)}>
                   <Avatar className="h-8 w-8">
+                    <AvatarImage src={(session.user as SessionUser).profilePhoto || (session.user as SessionUser).image || ''} alt="Profile Photo" />
                     <AvatarFallback className="bg-blue-100 text-blue-600 text-sm font-medium">
-                      {getUserInitials(session.user.name, session.user.email)}
+                      {getUserInitials((session.user as SessionUser).name, (session.user as SessionUser).email)}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
                 {showProfileMenu && (
                   <div ref={profileMenuRef} className="absolute right-0 mt-2 w-56 bg-white shadow-lg rounded-lg border z-50 py-2">
                     <div className="px-4 py-2 border-b">
-                      <div className="font-medium text-sm">{session.user.name || 'User'}</div>
-                      <div className="text-xs text-muted-foreground">{session.user.email}</div>
+                      <div className="font-medium text-sm">{(session.user as SessionUser).name || 'User'}</div>
+                      <div className="text-xs text-muted-foreground">{(session.user as SessionUser).email}</div>
                     </div>
                     <Link href="/profile" className="block px-4 py-2 hover:bg-gray-100 text-sm">Profile</Link>
                     <Link href="/orders" className="block px-4 py-2 hover:bg-gray-100 text-sm">Orders</Link>
@@ -221,8 +230,9 @@ export default function Navbar() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-8 w-8">
+                      <AvatarImage src={(session.user as SessionUser).profilePhoto || (session.user as SessionUser).image || ''} alt="Profile Photo" />
                       <AvatarFallback className="bg-blue-100 text-blue-600 text-sm font-medium">
-                        {getUserInitials(session.user.name, session.user.email)}
+                        {getUserInitials((session.user as SessionUser).name, (session.user as SessionUser).email)}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
@@ -231,10 +241,10 @@ export default function Navbar() {
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium leading-none">
-                        {session.user.name || 'User'}
+                        {(session.user as SessionUser).name || 'User'}
                       </p>
                       <p className="text-xs leading-none text-muted-foreground">
-                        {session.user.email}
+                        {(session.user as SessionUser).email}
                       </p>
                     </div>
                   </DropdownMenuLabel>
@@ -345,16 +355,17 @@ export default function Navbar() {
                 <div className="flex flex-col space-y-2">
                   <div className="flex items-center space-x-2 py-2">
                     <Avatar className="h-8 w-8">
+                      <AvatarImage src={(session.user as SessionUser).profilePhoto || (session.user as SessionUser).image || ''} alt="Profile Photo" />
                       <AvatarFallback className="bg-blue-100 text-blue-600 text-sm font-medium">
-                        {getUserInitials(session.user.name, session.user.email)}
+                        {getUserInitials((session.user as SessionUser).name, (session.user as SessionUser).email)}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col">
                       <span className="text-sm font-medium text-gray-900">
-                        {session.user.name || 'User'}
+                        {(session.user as SessionUser).name || 'User'}
                       </span>
                       <span className="text-xs text-gray-500">
-                        {session.user.email}
+                        {(session.user as SessionUser).email}
                       </span>
                     </div>
                   </div>

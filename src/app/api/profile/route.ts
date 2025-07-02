@@ -37,8 +37,10 @@ export async function GET(req: NextRequest) {
         id: true,
         name: true,
         email: true,
+        phone: true,
         address: true,
         createdAt: true,
+        profilePhoto: true,
       }
     });
 
@@ -68,8 +70,8 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    const { name, email, address } = await req.json();
-    console.log("Received data:", { name, email, address });
+    const { name, email, phone, address, profilePhoto } = await req.json();
+    console.log("Received data:", { name, email, phone, address, profilePhoto });
 
     // Validate input
     if (!name || !email) {
@@ -101,13 +103,17 @@ export async function PUT(req: NextRequest) {
       data: {
         name: name.trim(),
         email: email.toLowerCase().trim(),
+        phone: phone ? phone.trim() : undefined,
         address: address || null,
+        profilePhoto: profilePhoto || undefined,
       },
       select: {
         id: true,
         name: true,
         email: true,
+        phone: true,
         address: true,
+        profilePhoto: true,
       }
     });
 

@@ -15,6 +15,8 @@ model User {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   address   Json?
+  profilePhoto String?
+  phone     String?   // Personal mobile number
   accounts  Account[]
   orders    Order[]
   sessions  Session[]

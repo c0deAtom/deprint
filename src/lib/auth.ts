@@ -43,13 +43,15 @@ export const authOptions = {
         // Always fetch the latest user data from the DB
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { id: true, name: true, email: true }
+          select: { id: true, name: true, email: true, profilePhoto: true }
         });
         if (dbUser) {
           session.user = {
             id: dbUser.id,
             name: dbUser.name ?? undefined,
             email: dbUser.email ?? undefined,
+            image: dbUser.profilePhoto ?? undefined,
+            profilePhoto: dbUser.profilePhoto ?? undefined,
           };
         }
       }

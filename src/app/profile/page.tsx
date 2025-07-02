@@ -1,18 +1,22 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Mail, Calendar, Edit, Save, X, Lock, ShoppingBag, Package, Settings } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Edit, Settings, Loader2, Pencil, Package } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
-import { Eye, EyeOff } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import ReactCrop, { Crop } from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import Image from "next/image";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Address {
   line1: string;
@@ -25,13 +29,24 @@ interface Address {
 interface ProfileForm {
   name: string;
   email: string;
+  phone?: string;
   address: Address;
+  profilePhoto?: string;
 }
 
-interface PasswordForm {
-  currentPassword: string;
-  newPassword: string;
-  confirmPassword: string;
+interface OrderItem {
+  id: string;
+  product: { id: string; name: string; imageUrls: string[] };
+  quantity: number;
+  price: number;
+}
+
+interface Order {
+  id: string;
+  status: string;
+  createdAt: string;
+  total: number;
+  items: OrderItem[];
 }
 
 export default function ProfilePage() {
@@ -40,25 +55,33 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [isAddressEditing, setIsAddressEditing] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [profileLoading, setProfileLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("profile");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
-  // Local state for displaying user data (will be updated immediately)
-  const [localUserData, setLocalUserData] = useState<{ name: string; email: string; address: Address }>({
-    name: "",
-    email: "",
-    address: { line1: "", state: "", city: "", pincode: "", mobile: "" },
-  });
-  
-  const [profileForm, setProfileForm] = useState<ProfileForm>({
-    name: "",
-    email: "",
-    address: { line1: "", state: "", city: "", pincode: "", mobile: "" },
-  });
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [crop, setCrop] = useState<Crop>({ unit: '%', x: 10, y: 10, width: 80, height: 80 });
+  const [croppedImage, setCroppedImage] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [cropLoading, setCropLoading] = useState(false);
 
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(true);
+
+  const [addressErrors, setAddressErrors] = useState<{ [key: string]: string }>({});
+
+  const cropImageRef = useRef<HTMLImageElement | null>(null);
+
+  const [localUserData, setLocalUserData] = useState<{ name: string; email: string; phone?: string; address: Address; profilePhoto?: string }>({
+    name: "",
+    email: "",
+    phone: "",
+    address: { line1: "", state: "", city: "", pincode: "", mobile: "" },
+    profilePhoto: undefined,
+  });
+  const [profileForm, setProfileForm] = useState<ProfileForm & { phone?: string; profilePhoto?: string }>({
+    name: "",
+    email: "",
+    phone: "",
+    address: { line1: "", state: "", city: "", pincode: "", mobile: "" },
+    profilePhoto: undefined,
+  });
   const [addressForm, setAddressForm] = useState<Address>({
     line1: "",
     state: "",
@@ -67,15 +90,10 @@ export default function ProfilePage() {
     mobile: "",
   });
 
-  const [passwordForm, setPasswordForm] = useState<PasswordForm>({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
-
-  const [passwordMessage, setPasswordMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [profileMessage, setProfileMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [addressMessage, setAddressMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  const [profileErrors, setProfileErrors] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
     if (status === "loading") return;
@@ -85,7 +103,7 @@ export default function ProfilePage() {
     }
     // Fetch user profile to get structured address
     const fetchProfile = async () => {
-      setProfileLoading(true);
+      setLoading(true);
       try {
         const res = await fetch("/api/profile");
         if (res.ok) {
@@ -93,7 +111,9 @@ export default function ProfilePage() {
           const userData = {
             name: data.user?.name || "",
             email: data.user?.email || "",
+            phone: (data.user as { phone?: string })?.phone || "",
             address: data.user?.address || { line1: "", state: "", city: "", pincode: "", mobile: "" },
+            profilePhoto: (data.user as { profilePhoto?: string })?.profilePhoto || undefined,
           };
           setLocalUserData(userData);
           setProfileForm(userData);
@@ -101,20 +121,74 @@ export default function ProfilePage() {
         }
       } catch {
         // fallback to session
-        const userData = {
+        const fallbackUserData = {
           name: session.user?.name || "",
           email: session.user?.email || "",
+          phone: (session.user as { phone?: string })?.phone || "",
           address: { line1: "", state: "", city: "", pincode: "", mobile: "" },
+          profilePhoto: (session.user as { profilePhoto?: string; image?: string })?.profilePhoto || (session.user as { image?: string })?.image || undefined,
         };
-        setLocalUserData(userData);
-        setProfileForm(userData);
-        setAddressForm(userData.address);
+        setLocalUserData(fallbackUserData);
+        setProfileForm(fallbackUserData);
+        setAddressForm(fallbackUserData.address);
       } finally {
-        setProfileLoading(false);
+        setLoading(false);
       }
     };
     fetchProfile();
+
+    // Fetch user orders for the Orders card
+    const fetchOrders = async () => {
+      setOrdersLoading(true);
+      try {
+        const res = await fetch("/api/orders?limit=3");
+        if (res.ok) {
+          const data = await res.json();
+          setOrders(data.orders || []);
+        } else {
+          setOrders([]);
+        }
+      } catch {
+        setOrders([]);
+      } finally {
+        setOrdersLoading(false);
+      }
+    };
+    fetchOrders();
   }, [session, status, router]);
+
+  useEffect(() => {
+    if (!imageUrl || !crop.width || !crop.height) return;
+    const img = document.getElementById('crop-image') as HTMLImageElement;
+    if (!img) return;
+    const getCroppedImg = async () => {
+      const canvas = document.createElement('canvas');
+      const scaleX = img.naturalWidth / img.width;
+      const scaleY = img.naturalHeight / img.height;
+      canvas.width = crop.width;
+      canvas.height = crop.height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.drawImage(
+        img,
+        crop.x * scaleX,
+        crop.y * scaleY,
+        crop.width * scaleX,
+        crop.height * scaleY,
+        0,
+        0,
+        crop.width,
+        crop.height
+      );
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const previewUrl = URL.createObjectURL(blob);
+          setCroppedImage(previewUrl);
+        }
+      }, 'image/jpeg', 1);
+    };
+    getCroppedImg();
+  }, [crop, imageUrl]);
 
   const handleProfileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setProfileForm({ ...profileForm, [e.target.name]: e.target.value });
@@ -129,30 +203,36 @@ export default function ProfilePage() {
     setAddressMessage(null);
   };
 
-  const handlePasswordInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPasswordForm({ ...passwordForm, [e.target.name]: e.target.value });
-    setPasswordMessage(null);
+  const validateProfile = () => {
+    const errors: { [key: string]: string } = {};
+    if (!profileForm.name.trim()) errors.name = "Name is required";
+    if (!profileForm.email.trim()) errors.email = "Email is required";
+    if (!profileForm.phone?.trim()) errors.phone = "Phone is required";
+    else if (!/^[0-9]{10}$/.test(profileForm.phone)) errors.phone = "Phone must be 10 digits";
+    setProfileErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleProfileSave = async () => {
+    if (!validateProfile()) return;
     setLoading(true);
     try {
       const res = await fetch("/api/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(profileForm),
+        body: JSON.stringify({ ...profileForm }),
       });
       const data = await res.json();
       if (res.ok) {
         setProfileMessage({ type: "success", text: "Profile updated successfully!" });
         setIsEditing(false);
-        
-        // Update local state immediately for instant UI feedback
         if (data.user) {
           const updatedUserData = {
             name: data.user.name,
             email: data.user.email,
+            phone: data.user.phone || "",
             address: data.user.address || { line1: "", state: "", city: "", pincode: "", mobile: "" },
+            profilePhoto: data.user.profilePhoto || undefined,
           };
           setLocalUserData(updatedUserData);
           setProfileForm(updatedUserData);
@@ -166,7 +246,21 @@ export default function ProfilePage() {
     setLoading(false);
   };
 
+  const validateAddress = () => {
+    const errors: { [key: string]: string } = {};
+    if (!addressForm.line1.trim()) errors.line1 = "Street/House is required";
+    if (!addressForm.city.trim()) errors.city = "City is required";
+    if (!addressForm.state.trim()) errors.state = "State is required";
+    if (!addressForm.pincode.trim()) errors.pincode = "Pincode is required";
+    else if (!/^[0-9]{6}$/.test(addressForm.pincode)) errors.pincode = "Pincode must be 6 digits";
+    if (!addressForm.mobile.trim()) errors.mobile = "Mobile is required";
+    else if (!/^[0-9]{10}$/.test(addressForm.mobile)) errors.mobile = "Mobile must be 10 digits";
+    setAddressErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleAddressSave = async () => {
+    if (!validateAddress()) return;
     setLoading(true);
     try {
       const res = await fetch("/api/profile", {
@@ -175,6 +269,7 @@ export default function ProfilePage() {
         body: JSON.stringify({
           name: localUserData.name,
           email: localUserData.email,
+          phone: localUserData.phone,
           address: addressForm,
         }),
       });
@@ -182,13 +277,13 @@ export default function ProfilePage() {
       if (res.ok) {
         setAddressMessage({ type: "success", text: "Address updated successfully!" });
         setIsAddressEditing(false);
-        
-        // Update local state immediately for instant UI feedback
         if (data.user) {
           const updatedUserData = {
             name: data.user.name,
             email: data.user.email,
+            phone: data.user.phone || "",
             address: data.user.address || { line1: "", state: "", city: "", pincode: "", mobile: "" },
+            profilePhoto: data.user.profilePhoto || undefined,
           };
           setLocalUserData(updatedUserData);
           setAddressForm(updatedUserData.address);
@@ -208,59 +303,159 @@ export default function ProfilePage() {
     setAddressMessage(null);
   };
 
-  const testSession = async () => {
+  const handleProfilePhotoUpload = async (urls: string[]) => {
+    if (!urls[0]) return;
+    setProfileForm((prev) => ({ ...prev, profilePhoto: urls[0] }));
+    setLocalUserData((prev) => ({ ...prev, profilePhoto: urls[0] }));
+    setProfileMessage(null);
+    // Save to backend
     try {
-      const res = await fetch("/api/profile");
-      const data = await res.json();
-      console.log("Session test response:", data);
-      toast.info("Check console for session test results");
-    } catch (error) {
-      console.error("Session test error:", error);
-      toast.error("Session test failed");
-    }
-  };
-
-  const handlePasswordSave = async () => {
-    if (passwordForm.newPassword.length < 6) {
-      setPasswordMessage({ type: "error", text: "Password must be at least 6 characters long" });
-      return;
-    }
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      setPasswordMessage({ type: "error", text: "New passwords do not match" });
-      return;
-    }
-    setLoading(true);
-    try {
-      const res = await fetch("/api/profile/password", {
+      const res = await fetch("/api/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          currentPassword: passwordForm.currentPassword,
-          newPassword: passwordForm.newPassword,
+          ...profileForm,
+          profilePhoto: urls[0],
         }),
       });
       const data = await res.json();
-      if (res.ok) {
-        setPasswordMessage({ type: "success", text: "Password changed successfully!" });
-        setPasswordForm({
-          currentPassword: "",
-          newPassword: "",
-          confirmPassword: "",
-        });
+      if (res.ok && data.user) {
+        setLocalUserData((prev) => ({ ...prev, profilePhoto: data.user.profilePhoto }));
+        setProfileForm((prev) => ({ ...prev, profilePhoto: data.user.profilePhoto }));
+        toast.success("Profile photo updated!");
       } else {
-        setPasswordMessage({ type: "error", text: data.error || "Failed to change password" });
+        toast.error(data.error || "Failed to update profile photo");
       }
     } catch {
-      setPasswordMessage({ type: "error", text: "An error occurred while changing password" });
+      toast.error("Failed to update profile photo");
     }
-    setLoading(false);
+  };
+
+  const onSelectFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      const url = URL.createObjectURL(file);
+      setImageUrl(url);
+      setShowCropModal(true);
+    }
+  };
+
+  const handleCropImageLoaded = (event: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = event.currentTarget;
+    const width = img.naturalWidth;
+    const height = img.naturalHeight;
+    const minDim = Math.min(width, height);
+    const maxCrop = Math.min(minDim * 0.8, 400); // 80% of min dimension or 400px max
+    const crop = {
+      unit: 'px' as const,
+      x: Math.round((width - maxCrop) / 2),
+      y: Math.round((height - maxCrop) / 2),
+      width: Math.round(maxCrop),
+      height: Math.round(maxCrop),
+    };
+    setCrop(crop);
+    // Generate preview immediately
+    setTimeout(() => {
+      const canvas = document.createElement('canvas');
+      const scaleX = img.naturalWidth / img.width;
+      const scaleY = img.naturalHeight / img.height;
+      canvas.width = crop.width;
+      canvas.height = crop.height;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(
+          img,
+          crop.x * scaleX,
+          crop.y * scaleY,
+          crop.width * scaleX,
+          crop.height * scaleY,
+          0,
+          0,
+          crop.width,
+          crop.height
+        );
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const previewUrl = URL.createObjectURL(blob);
+            setCroppedImage(previewUrl);
+          }
+        }, 'image/jpeg', 1);
+      }
+    }, 100);
+  };
+
+  const getCroppedImg = async (image: HTMLImageElement, crop: Crop): Promise<Blob | null> => {
+    if (!crop.width || !crop.height) return null;
+    const canvas = document.createElement('canvas');
+    const scaleX = image.naturalWidth / image.width;
+    const scaleY = image.naturalHeight / image.height;
+    canvas.width = crop.width;
+    canvas.height = crop.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    ctx.drawImage(
+      image,
+      crop.x * scaleX,
+      crop.y * scaleY,
+      crop.width * scaleX,
+      crop.height * scaleY,
+      0,
+      0,
+      crop.width,
+      crop.height
+    );
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => {
+        resolve(blob);
+      }, 'image/jpeg', 1);
+    });
+  };
+
+  const handleCropSave = async () => {
+    setCropLoading(true);
+    const img = document.getElementById('crop-image') as HTMLImageElement;
+    if (!img) return;
+    const croppedBlob = await getCroppedImg(img, crop);
+    if (!croppedBlob) {
+      setCropLoading(false);
+      return;
+    }
+    // Show preview
+    const previewUrl = URL.createObjectURL(croppedBlob);
+    setCroppedImage(previewUrl);
+    // Upload to Cloudinary via /api/upload
+    const formData = new FormData();
+    formData.append('images', croppedBlob, 'profile.jpg');
+    try {
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.imageUrls && data.imageUrls[0]) {
+          await handleProfilePhotoUpload([data.imageUrls[0]]);
+          setShowCropModal(false);
+          setImageUrl(null);
+          setCroppedImage(null);
+        }
+      } else {
+        toast.error('Failed to upload cropped image');
+      }
+    } catch {
+      toast.error('Failed to upload cropped image');
+    } finally {
+      setCropLoading(false);
+    }
   };
 
   const handleProfileCancel = () => {
     setProfileForm({
       name: localUserData.name,
       email: localUserData.email,
+      phone: localUserData.phone,
       address: localUserData.address,
+      profilePhoto: localUserData.profilePhoto,
     });
     setIsEditing(false);
   };
@@ -268,11 +463,82 @@ export default function ProfilePage() {
   if (status === "loading") {
     return (
       <main className="flex flex-col items-center px-4 min-h-screen py-10">
-        <div className="w-full max-w-4xl">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold mb-2">Profile</h1>
-            <p className="text-muted-foreground">Loading...</p>
-          </div>
+        <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
+          {/* Left Card: Avatar and Name Skeleton */}
+          <Card className="flex flex-col items-center p-6 md:col-span-1">
+            <div className="relative group mb-4">
+              <Skeleton className="h-32 w-32 rounded-full mb-4" />
+            </div>
+            <div className="text-center w-full">
+              <Skeleton className="h-8 w-32 mb-2 mx-auto" />
+              <Skeleton className="h-4 w-40 mb-4 mx-auto" />
+            </div>
+          </Card>
+          {/* Right Card: Personal Info Skeleton */}
+          <Card className="p-6 md:col-span-2 flex flex-col justify-between">
+            <div className="mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                <div>
+                  <Skeleton className="h-4 w-20 mb-2" />
+                  <Skeleton className="h-6 w-full mb-1" />
+                </div>
+                <div>
+                  <Skeleton className="h-4 w-20 mb-2" />
+                  <Skeleton className="h-6 w-full mb-1" />
+                </div>
+                <div>
+                  <Skeleton className="h-4 w-20 mb-2" />
+                  <Skeleton className="h-6 w-full mb-1" />
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Skeleton className="h-8 w-24" />
+            </div>
+          </Card>
+        </div>
+        {/* Below the dashboard cards, Address and Orders Skeletons */}
+        <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-8 mt-10">
+          {/* Address Card Skeleton */}
+          <Card className="p-6 flex flex-col justify-between">
+            <div className="mb-4">
+              <Skeleton className="h-6 w-32 mb-4" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-28" />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Skeleton className="h-8 w-24" />
+            </div>
+          </Card>
+          {/* Orders Card Skeleton */}
+          <Card className="p-6 flex flex-col justify-between">
+            <div className="mb-4">
+              <Skeleton className="h-6 w-32 mb-4" />
+              <div className="space-y-4">
+                {[...Array(2)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-4 p-3 border rounded-lg">
+                    <Skeleton className="w-12 h-12 rounded" />
+                    <div className="flex-1 min-w-0">
+                      <Skeleton className="h-4 w-24 mb-2" />
+                      <Skeleton className="h-3 w-16" />
+                    </div>
+                    <div className="text-right">
+                      <Skeleton className="h-4 w-16 mb-1" />
+                      <Skeleton className="h-3 w-12" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex justify-end pt-4 border-t">
+              <Skeleton className="h-8 w-24" />
+            </div>
+          </Card>
         </div>
       </main>
     );
@@ -284,481 +550,270 @@ export default function ProfilePage() {
 
   return (
     <main className="flex flex-col items-center px-4 py-10 min-h-screen">
-      <div className="w-full max-w-4xl">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">My Account</h1>
-          <p className="text-muted-foreground">Manage your account settings and preferences</p>
-        </div>
-
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-8">
-            <TabsTrigger value="profile" className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              Profile
-            </TabsTrigger>
-            <TabsTrigger value="address" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              Address
-            </TabsTrigger>
-            <TabsTrigger value="security" className="flex items-center gap-2">
-              <Lock className="h-4 w-4" />
-              Security
-            </TabsTrigger>
-            <TabsTrigger value="orders" className="flex items-center gap-2">
-              <Package className="h-4 w-4" />
-              Orders
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Profile Tab */}
-          <TabsContent value="profile">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Personal Information</CardTitle>
-                    <CardDescription>Update your profile details</CardDescription>
-                  </div>
-                  <div className="flex gap-2">
-                    {!isEditing ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setIsEditing(true)}
-                        className="flex items-center gap-2"
-                      >
-                        <Edit className="h-4 w-4" />
-                        Edit
-                      </Button>
-                    ) : (
-                      <>
-                        <Button
-                          size="sm"
-                          onClick={handleProfileSave}
-                          disabled={loading}
-                          className="flex items-center gap-2"
-                        >
-                          <Save className="h-4 w-4" />
-                          {loading ? "Saving..." : "Save"}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleProfileCancel}
-                          className="flex items-center gap-2"
-                        >
-                          <X className="h-4 w-4" />
-                          Cancel
-                        </Button>
-                      </>
-                    )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={testSession}
-                      className="flex items-center gap-2"
-                    >
-                      Test Session
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <User className="h-5 w-5 text-muted-foreground" />
-                    <div className="flex-1">
-                      <Label htmlFor="name">Name</Label>
-                      {isEditing ? (
-                        <Input
-                          id="name"
-                          name="name"
-                          value={profileForm.name}
-                          onChange={handleProfileInputChange}
-                          placeholder="Enter your name"
-                        />
-                      ) : (
-                        <p className="text-sm font-medium">
-                          {profileLoading ? (
-                            <span className="text-muted-foreground">Loading...</span>
-                          ) : (
-                            localUserData.name || "Not provided"
-                          )}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  <div className="flex items-center gap-3">
-                    <Mail className="h-5 w-5 text-muted-foreground" />
-                    <div className="flex-1">
-                      <Label htmlFor="email">Email</Label>
-                      {isEditing ? (
-                        <Input
-                          id="email"
-                          name="email"
-                          type="email"
-                          value={profileForm.email}
-                          onChange={handleProfileInputChange}
-                          placeholder="Enter your email"
-                        />
-                      ) : (
-                        <p className="text-sm font-medium">
-                          {profileLoading ? (
-                            <span className="text-muted-foreground">Loading...</span>
-                          ) : (
-                            localUserData.email
-                          )}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  <div className="flex items-center gap-3">
-                    <Calendar className="h-5 w-5 text-muted-foreground" />
-                    <div className="flex-1">
-                      <Label>Member Since</Label>
-                      <p className="text-sm font-medium">
-                        {new Date().toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                {profileMessage && (
-                  <div
-                    className={`text-sm mb-2 ${
-                      profileMessage.type === "error" ? "text-red-600" : "text-green-600"
-                    }`}
-                  >
-                    {profileMessage.text}
+      <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
+        {/* Left Card: Avatar and Name */}
+        <Card className="flex flex-col items-center p-6 md:col-span-1">
+          <div className="relative group mb-4">
+            <Avatar className="h-32 w-32">
+              {localUserData.profilePhoto ? (
+                <AvatarImage src={localUserData.profilePhoto} alt="Profile Photo" />
+              ) : (
+                <AvatarFallback className="text-4xl">{localUserData.name?.[0] || localUserData.email?.[0] || "U"}</AvatarFallback>
+              )}
+            </Avatar>
+            <button
+              type="button"
+              className="absolute bottom-2 right-2 bg-white rounded-full p-2 shadow group-hover:scale-110 transition-transform border border-gray-200"
+              onClick={() => document.getElementById('profile-photo-input')?.click()}
+              aria-label="Edit profile photo"
+            >
+              <Pencil className="w-6 h-6 text-blue-600" />
+            </button>
+          </div>
+          <div className="text-center w-full">
+            <div className="text-2xl font-bold mb-1">{localUserData.name || <span className="text-muted-foreground">No name</span>}</div>
+            <div className="text-sm text-muted-foreground mb-4">{localUserData.email}</div>
+          </div>
+        </Card>
+        {/* Right Card: Personal Info */}
+        <Card className="p-6 md:col-span-2 flex flex-col justify-between">
+          <div className="mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+              <div>
+                <div className="text-xs text-muted-foreground">Full Name</div>
+                {isEditing ? (
+                  <>
+                    <Input
+                      name="name"
+                      value={profileForm.name}
+                      onChange={handleProfileInputChange}
+                      placeholder="Full Name"
+                      className={profileErrors.name ? "mb-1 border-red-500 focus:border-red-500" : "mb-1"}
+                    />
+                    {profileErrors.name && <p className="text-red-500 text-xs mt-1">{profileErrors.name}</p>}
+                  </>
+                ) : (
+                  <div className="text-base font-medium">{localUserData.name || <span className="text-muted-foreground">Not provided</span>}</div>
+                )}
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">Email</div>
+                {isEditing ? (
+                  <>
+                    <Input
+                      name="email"
+                      value={profileForm.email}
+                      onChange={handleProfileInputChange}
+                      placeholder="Email"
+                      className={profileErrors.email ? "mb-1 border-red-500 focus:border-red-500" : "mb-1"}
+                    />
+                    {profileErrors.email && <p className="text-red-500 text-xs mt-1">{profileErrors.email}</p>}
+                  </>
+                ) : (
+                  <div className="text-base font-medium">{localUserData.email}</div>
+                )}
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">Phone</div>
+                {isEditing ? (
+                  <>
+                    <Input
+                      name="phone"
+                      value={profileForm.phone}
+                      onChange={handleProfileInputChange}
+                      placeholder="Phone"
+                      className={profileErrors.phone ? "mb-1 border-red-500 focus:border-red-500" : "mb-1"}
+                    />
+                    {profileErrors.phone && <p className="text-red-500 text-xs mt-1">{profileErrors.phone}</p>}
+                  </>
+                ) : (
+                  <div className="text-base font-medium">
+                    {localUserData.phone ? `+91 ${localUserData.phone}` : <span className="text-muted-foreground">Not provided</span>}
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Address Tab */}
-          <TabsContent value="address">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Address</CardTitle>
-                    <CardDescription>Update your address</CardDescription>
-                  </div>
-                  <div className="flex gap-2">
-                    {!isAddressEditing ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setIsAddressEditing(true)}
-                        className="flex items-center gap-2"
-                      >
-                        <Edit className="h-4 w-4" />
-                        Edit
-                      </Button>
-                    ) : (
-                      <>
-                        <Button
-                          size="sm"
-                          onClick={handleAddressSave}
-                          disabled={loading}
-                          className="flex items-center gap-2"
-                        >
-                          <Save className="h-4 w-4" />
-                          {loading ? "Saving..." : "Save"}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleAddressCancel}
-                          className="flex items-center gap-2"
-                        >
-                          <X className="h-4 w-4" />
-                          Cancel
-                        </Button>
-                      </>
-                    )}
-                  </div>
+              </div>
+            </div>
+            {profileMessage && (
+              <div className={`text-sm mt-2 ${profileMessage.type === "error" ? "text-red-600" : "text-green-600"}`}>{profileMessage.text}</div>
+            )}
+          </div>
+          <div className="flex justify-end gap-2">
+            {isEditing ? (
+              <>
+                <Button size="sm" onClick={handleProfileSave} disabled={loading}>{loading ? "Saving..." : "Save"}</Button>
+                <Button variant="outline" size="sm" onClick={handleProfileCancel}>Cancel</Button>
+              </>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                <Edit className="h-4 w-4 mr-2" /> Edit
+              </Button>
+            )}
+          </div>
+        </Card>
+      </div>
+      {/* Below the dashboard cards, add Address and Orders cards */}
+      <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-8 mt-10">
+        {/* Address Card */}
+        <Card className="p-6 flex flex-col justify-between">
+          <div className="mb-4">
+            <div className="text-lg font-semibold mb-2 flex items-center gap-2">
+              <Settings className="h-5 w-5" /> Address
+            </div>
+            {isAddressEditing ? (
+                <div className="space-y-2 flex flex-col gap-2">
+                <div>
+                  <Label htmlFor="line1">Street / House</Label>
+                  <Input id="line1" name="line1" value={addressForm.line1} onChange={handleAddressInputChange} placeholder="Street / House" className={addressErrors.line1 ? "border-red-500 focus:border-red-500" : "mb-1"} />
+                  {addressErrors.line1 && <p className="text-red-500 text-xs mt-1">{addressErrors.line1}</p>}
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <Package className="h-5 w-5 text-muted-foreground" />
-                    <div className="flex-1">
-                      <Label htmlFor="line1">Street / House</Label>
-                      {isAddressEditing ? (
-                        <Input
-                          id="line1"
-                          name="line1"
-                          value={addressForm.line1}
-                          onChange={handleAddressInputChange}
-                          placeholder="Street, House No."
-                        />
-                      ) : (
-                        <p className="text-sm font-medium">
-                          {localUserData.address.line1 || "Not provided"}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  <div className="flex items-center gap-3">
-                    <Package className="h-5 w-5 text-muted-foreground" />
-                    <div className="flex-1">
-                      <Label htmlFor="state">State</Label>
-                      {isAddressEditing ? (
-                        <Input
-                          id="state"
-                          name="state"
-                          value={addressForm.state}
-                          onChange={handleAddressInputChange}
-                          placeholder="State"
-                        />
-                      ) : (
-                        <p className="text-sm font-medium">
-                          {localUserData.address.state || "Not provided"}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  <div className="flex items-center gap-3">
-                    <Package className="h-5 w-5 text-muted-foreground" />
-                    <div className="flex-1">
-                      <Label htmlFor="city">City</Label>
-                      {isAddressEditing ? (
-                        <Input
-                          id="city"
-                          name="city"
-                          value={addressForm.city}
-                          onChange={handleAddressInputChange}
-                          placeholder="City"
-                        />
-                      ) : (
-                        <p className="text-sm font-medium">
-                          {localUserData.address.city || "Not provided"}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  <div className="flex items-center gap-3">
-                    <Package className="h-5 w-5 text-muted-foreground" />
-                    <div className="flex-1">
-                      <Label htmlFor="pincode">Pincode</Label>
-                      {isAddressEditing ? (
-                        <Input
-                          id="pincode"
-                          name="pincode"
-                          value={addressForm.pincode}
-                          onChange={handleAddressInputChange}
-                          placeholder="Pincode"
-                        />
-                      ) : (
-                        <p className="text-sm font-medium">
-                          {localUserData.address.pincode || "Not provided"}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  <div className="flex items-center gap-3">
-                    <Package className="h-5 w-5 text-muted-foreground" />
-                    <div className="flex-1">
-                      <Label htmlFor="mobile">Mobile</Label>
-                      {isAddressEditing ? (
-                        <Input
-                          id="mobile"
-                          name="mobile"
-                          value={addressForm.mobile}
-                          onChange={handleAddressInputChange}
-                          placeholder="Mobile Number"
-                        />
-                      ) : (
-                        <p className="text-sm font-medium">
-                          {localUserData.address.mobile || "Not provided"}
-                        </p>
-                      )}
-                    </div>
-                  </div>
+                <div>
+                  <Label htmlFor="city">City</Label>
+                  <Input id="city" name="city" value={addressForm.city} onChange={handleAddressInputChange} placeholder="City" className={addressErrors.city ? "border-red-500 focus:border-red-500" : ""} />
+                  {addressErrors.city && <p className="text-red-500 text-xs mt-1">{addressErrors.city}</p>}
+                </div>
+                <div>
+                  <Label htmlFor="state">State</Label>
+                  <Input id="state" name="state" value={addressForm.state} onChange={handleAddressInputChange} placeholder="State" className={addressErrors.state ? "border-red-500 focus:border-red-500" : ""} />
+                  {addressErrors.state && <p className="text-red-500 text-xs mt-1">{addressErrors.state}</p>}
+                </div>
+                <div>
+                  <Label htmlFor="pincode">Pincode</Label>
+                  <Input id="pincode" name="pincode" value={addressForm.pincode} onChange={handleAddressInputChange} placeholder="Pincode" className={addressErrors.pincode ? "border-red-500 focus:border-red-500" : ""} />
+                  {addressErrors.pincode && <p className="text-red-500 text-xs mt-1">{addressErrors.pincode}</p>}
+                </div>
+                <div>
+                  <Label htmlFor="mobile">Mobile</Label>
+                  <Input id="mobile" name="mobile" value={addressForm.mobile} onChange={handleAddressInputChange} placeholder="Mobile" className={addressErrors.mobile ? "border-red-500 focus:border-red-500" : ""} />
+                  {addressErrors.mobile && <p className="text-red-500 text-xs mt-1">{addressErrors.mobile}</p>}
                 </div>
                 {addressMessage && (
-                  <div
-                    className={`text-sm mb-2 ${
-                      addressMessage.type === "error" ? "text-red-600" : "text-green-600"
-                    }`}
-                  >
-                    {addressMessage.text}
-                  </div>
+                  <div className={`text-sm ${addressMessage.type === "error" ? "text-red-600" : "text-green-600"}`}>{addressMessage.text}</div>
                 )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Security Tab */}
-          <TabsContent value="security">
-            <Card>
-              <CardHeader>
-                <CardTitle>Change Password</CardTitle>
-                <CardDescription>Update your account password</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {passwordMessage && (
-                  <div
-                    className={`text-sm mb-2 ${
-                      passwordMessage.type === "error" ? "text-red-600" : "text-green-600"
-                    }`}
-                  >
-                    {passwordMessage.text}
-                  </div>
-                )}
-                <div>
-                  <Label htmlFor="currentPassword">Current Password</Label>
-                  <Input
-                    id="currentPassword"
-                    name="currentPassword"
-                    type={showPassword ? "text" : "password"}
-                    value={passwordForm.currentPassword}
-                    onChange={handlePasswordInputChange}
-                    placeholder="Enter current password"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="newPassword">New Password</Label>
-                  <Input
-                    id="newPassword"
-                    name="newPassword"
-                    type={showNewPassword ? "text" : "password"}
-                    value={passwordForm.newPassword}
-                    onChange={handlePasswordInputChange}
-                    placeholder="Enter new password"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                  <Input
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"}
-                    value={passwordForm.confirmPassword}
-                    onChange={handlePasswordInputChange}
-                    placeholder="Confirm new password"
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowNewPassword(!showNewPassword)}
-                  >
-                    {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  >
-                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
-                </div>
-                <Button onClick={handlePasswordSave} disabled={loading} className="w-full">
-                  {loading ? "Changing..." : "Change Password"}
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Orders Tab */}
-          <TabsContent value="orders">
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Orders</CardTitle>
-                <CardDescription>View your order history</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8">
-                  <ShoppingBag className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground mb-4">View all your orders and track their status</p>
-                  <Button asChild>
-                    <Link href="/orders">View All Orders</Link>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Package className="h-5 w-5" />
-                Quick Actions
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button variant="outline" className="w-full justify-start" asChild>
-                <Link href="/orders">View Orders</Link>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                <div><span className="text-xs text-muted-foreground">Street / House:</span> <span className="font-medium">{localUserData.address.line1 || <span className="text-muted-foreground">Not provided</span>}</span></div>
+                <div><span className="text-xs text-muted-foreground">City:</span> <span className="font-medium">{localUserData.address.city || <span className="text-muted-foreground">Not provided</span>}</span></div>
+                <div><span className="text-xs text-muted-foreground">State:</span> <span className="font-medium">{localUserData.address.state || <span className="text-muted-foreground">Not provided</span>}</span></div>
+                <div><span className="text-xs text-muted-foreground">Pincode:</span> <span className="font-medium">{localUserData.address.pincode || <span className="text-muted-foreground">Not provided</span>}</span></div>
+                <div><span className="text-xs text-muted-foreground">Mobile:</span> <span className="font-medium">{localUserData.address.mobile || <span className="text-muted-foreground">Not provided</span>}</span></div>
+              </div>
+            )}
+          </div>
+          <div className="flex justify-end gap-2">
+            {isAddressEditing ? (
+              <>
+                <Button size="sm" onClick={handleAddressSave} disabled={loading}>{loading ? "Saving..." : "Save"}</Button>
+                <Button variant="outline" size="sm" onClick={handleAddressCancel}>Cancel</Button>
+              </>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => setIsAddressEditing(true)}>
+                <Edit className="h-4 w-4 mr-2" /> Edit Address
               </Button>
-              <Button variant="outline" className="w-full justify-start" asChild>
-                <Link href="/cart">View Cart</Link>
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Settings className="h-5 w-5" />
-                Account
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button variant="outline" className="w-full justify-start">
-                Privacy Settings
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                Notification Preferences
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Support</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button variant="outline" className="w-full justify-start" asChild>
-                <Link href="/contact">Contact Support</Link>
-              </Button>
-              <Button variant="outline" className="w-full justify-start" asChild>
-                <Link href="/help">Help Center</Link>
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+            )}
+          </div>
+        </Card>
+        {/* Orders Card */}
+        <Card className="p-6 flex flex-col justify-between">
+          <div className="mb-4">
+            <div className="text-lg font-semibold mb-2 flex items-center gap-2">
+              <Package className="h-5 w-5" /> Orders
+            </div>
+            {ordersLoading ? (
+              <div className="text-muted-foreground">Loading orders...</div>
+            ) : orders.length === 0 ? (
+              <div className="text-muted-foreground">No orders found.</div>
+            ) : (
+              <div className="space-y-4">
+                {orders.map((order: Order) => {
+                  return (
+                    <Card key={order.id} className="bg-muted/50 p-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="font-medium text-sm">Order #{order.id}</div>
+                        <Badge className="ml-2">{order.status}</Badge>
+                        <span className="text-xs text-muted-foreground">{new Date(order.createdAt).toLocaleDateString()}</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground mb-1">Total: ₹{order.total.toFixed(2)}</div>
+                      <div className="flex flex-wrap gap-2">
+                        {order.items.slice(0, 3).map((item: OrderItem) => (
+                          <div key={item.id} className="flex items-center gap-2 border rounded px-2 py-1">
+                            {Array.isArray(item.product.imageUrls) && item.product.imageUrls.length > 0 && (
+                              <Image src={item.product.imageUrls[0]} alt={item.product.name} width={32} height={32} className="object-cover rounded" />
+                            )}
+                            <span className="font-medium text-xs">{item.product.name}</span>
+                            <span className="text-xs">×{item.quantity}</span>
+                          </div>
+                        ))}
+                        {order.items.length > 3 && (
+                          <span className="text-xs text-muted-foreground">+{order.items.length - 3} more</span>
+                        )}
+                      </div>
+                      <div className="flex justify-end mt-2">
+                        <Button asChild size="sm" variant="outline">
+                          <Link href={`/orders/${order.id}`}>View Details</Link>
+                        </Button>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          <div className="flex justify-end">
+            <Button asChild>
+              <Link href="/orders">View All Orders</Link>
+            </Button>
+          </div>
+        </Card>
       </div>
+    
+      {/* Crop Modal */}
+      <Dialog open={showCropModal} onOpenChange={setShowCropModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Crop and set profile photo</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4">
+            {!imageUrl && (
+              <input type="file" accept="image/*" onChange={onSelectFile} className="w-full" />
+            )}
+            {imageUrl && (
+              <>
+                <ReactCrop
+                  crop={crop}
+                  onChange={setCrop}
+                  aspect={1}
+                  circularCrop
+                >
+                  <img
+                    id="crop-image"
+                    ref={cropImageRef}
+                    src={imageUrl}
+                    alt="Crop"
+                    onLoad={handleCropImageLoaded}
+                    style={{ maxWidth: '100%', maxHeight: '16rem', width: 'auto', height: 'auto', display: 'block', margin: '0 auto' }}
+                    className="rounded-full"
+                  />
+                </ReactCrop>
+                {croppedImage && (
+                  <div className="flex flex-col items-center mt-4">
+                    <span className="text-xs text-muted-foreground mb-1">Preview</span>
+                    <img src={croppedImage} alt="Cropped Preview" className="h-24 w-24 rounded-full border" />
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCropModal(false)} disabled={cropLoading}>Cancel</Button>
+            <Button onClick={handleCropSave} disabled={cropLoading || !imageUrl}>
+              {cropLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Hidden file input for profile photo selection */}
+      <input id="profile-photo-input" type="file" accept="image/*" className="hidden" onChange={onSelectFile} />
     </main>
   );
 } 
