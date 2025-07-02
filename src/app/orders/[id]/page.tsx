@@ -120,9 +120,10 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {order.items.map((item, index) => (
-                    <div key={item.id}>
-                      <div className="flex items-center gap-4 p-4 border rounded-lg">
+                  {order.items.map((item, index) => {
+                    const isPaid = order.status === 'DELIVERED' || order.paymentStatus === 'PAID';
+                    const productContent = (
+                      <>
                         {Array.isArray(item.product.imageUrls) && item.product.imageUrls.length > 0 && (
                           <Image
                             src={item.product.imageUrls[0] as string}
@@ -146,10 +147,27 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                             ₹{(item.price * item.quantity).toFixed(2)}
                           </p>
                         </div>
+                      </>
+                    );
+                    return (
+                      <div key={item.id}>
+                        {isPaid ? (
+                          <Link
+                            href={`/products/${item.product.id}`}
+                            className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted transition-colors"
+                            title={item.product.name}
+                          >
+                            {productContent}
+                          </Link>
+                        ) : (
+                          <div className="flex items-center gap-4 p-4 border rounded-lg opacity-60 cursor-not-allowed" title={item.product.name}>
+                            {productContent}
+                          </div>
+                        )}
+                        {index < order.items.length - 1 && <Separator className="my-4" />}
                       </div>
-                      {index < order.items.length - 1 && <Separator className="my-4" />}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>

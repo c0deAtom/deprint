@@ -537,7 +537,7 @@ export default function ProfilePage() {
             </div>
             <div className="flex justify-end pt-4 border-t">
               <Skeleton className="h-8 w-24" />
-            </div>
+          </div>
           </Card>
         </div>
       </main>
@@ -569,11 +569,11 @@ export default function ProfilePage() {
             >
               <Pencil className="w-6 h-6 text-blue-600" />
             </button>
-          </div>
+                  </div>
           <div className="text-center w-full">
             <div className="text-2xl font-bold mb-1">{localUserData.name || <span className="text-muted-foreground">No name</span>}</div>
             <div className="text-sm text-muted-foreground mb-4">{localUserData.email}</div>
-          </div>
+                </div>
         </Card>
         {/* Right Card: Personal Info */}
         <Card className="p-6 md:col-span-2 flex flex-col justify-between">
@@ -581,12 +581,12 @@ export default function ProfilePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
               <div>
                 <div className="text-xs text-muted-foreground">Full Name</div>
-                {isEditing ? (
+                      {isEditing ? (
                   <>
-                    <Input
-                      name="name"
-                      value={profileForm.name}
-                      onChange={handleProfileInputChange}
+                        <Input
+                          name="name"
+                          value={profileForm.name}
+                          onChange={handleProfileInputChange}
                       placeholder="Full Name"
                       className={profileErrors.name ? "mb-1 border-red-500 focus:border-red-500" : "mb-1"}
                     />
@@ -594,16 +594,16 @@ export default function ProfilePage() {
                   </>
                 ) : (
                   <div className="text-base font-medium">{localUserData.name || <span className="text-muted-foreground">Not provided</span>}</div>
-                )}
-              </div>
+                      )}
+                    </div>
               <div>
                 <div className="text-xs text-muted-foreground">Email</div>
-                {isEditing ? (
+                      {isEditing ? (
                   <>
-                    <Input
-                      name="email"
-                      value={profileForm.email}
-                      onChange={handleProfileInputChange}
+                        <Input
+                          name="email"
+                          value={profileForm.email}
+                          onChange={handleProfileInputChange}
                       placeholder="Email"
                       className={profileErrors.email ? "mb-1 border-red-500 focus:border-red-500" : "mb-1"}
                     />
@@ -613,11 +613,11 @@ export default function ProfilePage() {
                   <div className="text-base font-medium">{localUserData.email}</div>
                 )}
               </div>
-              <div>
+                  <div>
                 <div className="text-xs text-muted-foreground">Phone</div>
                 {isEditing ? (
                   <>
-                    <Input
+                        <Input
                       name="phone"
                       value={profileForm.phone}
                       onChange={handleProfileInputChange}
@@ -630,13 +630,13 @@ export default function ProfilePage() {
                   <div className="text-base font-medium">
                     {localUserData.phone ? `+91 ${localUserData.phone}` : <span className="text-muted-foreground">Not provided</span>}
                   </div>
-                )}
-              </div>
-            </div>
+                      )}
+                    </div>
+                  </div>
             {profileMessage && (
               <div className={`text-sm mt-2 ${profileMessage.type === "error" ? "text-red-600" : "text-green-600"}`}>{profileMessage.text}</div>
-            )}
-          </div>
+                      )}
+                    </div>
           <div className="flex justify-end gap-2">
             {isEditing ? (
               <>
@@ -647,8 +647,8 @@ export default function ProfilePage() {
               <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
                 <Edit className="h-4 w-4 mr-2" /> Edit
               </Button>
-            )}
-          </div>
+                      )}
+                    </div>
         </Card>
       </div>
       {/* Below the dashboard cards, add Address and Orders cards */}
@@ -658,8 +658,8 @@ export default function ProfilePage() {
           <div className="mb-4">
             <div className="text-lg font-semibold mb-2 flex items-center gap-2">
               <Settings className="h-5 w-5" /> Address
-            </div>
-            {isAddressEditing ? (
+                  </div>
+                      {isAddressEditing ? (
                 <div className="space-y-2 flex flex-col gap-2">
                 <div>
                   <Label htmlFor="line1">Street / House</Label>
@@ -726,6 +726,7 @@ export default function ProfilePage() {
             ) : (
               <div className="space-y-4">
                 {orders.map((order: Order) => {
+                  const isPaid = order.status === 'DELIVERED' || (order as any).paymentStatus === 'PAID';
                   return (
                     <Card key={order.id} className="bg-muted/50 p-3">
                       <div className="flex items-center justify-between mb-1">
@@ -735,15 +736,31 @@ export default function ProfilePage() {
                       </div>
                       <div className="text-xs text-muted-foreground mb-1">Total: ₹{order.total.toFixed(2)}</div>
                       <div className="flex flex-wrap gap-2">
-                        {order.items.slice(0, 3).map((item: OrderItem) => (
-                          <div key={item.id} className="flex items-center gap-2 border rounded px-2 py-1">
-                            {Array.isArray(item.product.imageUrls) && item.product.imageUrls.length > 0 && (
-                              <Image src={item.product.imageUrls[0]} alt={item.product.name} width={32} height={32} className="object-cover rounded" />
-                            )}
-                            <span className="font-medium text-xs">{item.product.name}</span>
-                            <span className="text-xs">×{item.quantity}</span>
-                          </div>
-                        ))}
+                        {order.items.slice(0, 3).map((item: OrderItem) => {
+                          const productContent = (
+                            <>
+                              {Array.isArray(item.product.imageUrls) && item.product.imageUrls.length > 0 && (
+                                <Image src={item.product.imageUrls[0]} alt={item.product.name} width={32} height={32} className="object-cover rounded" />
+                              )}
+                              <span className="font-medium text-xs">{item.product.name}</span>
+                              <span className="text-xs">×{item.quantity}</span>
+                            </>
+                          );
+                          return isPaid ? (
+                            <Link
+                              key={item.id}
+                              href={`/products/${item.product.id}`}
+                              className="flex items-center gap-2 border rounded px-2 py-1 hover:bg-muted transition-colors"
+                              title={item.product.name}
+                            >
+                              {productContent}
+                            </Link>
+                          ) : (
+                            <div key={item.id} className="flex items-center gap-2 border rounded px-2 py-1 opacity-60 cursor-not-allowed" title={item.product.name}>
+                              {productContent}
+                            </div>
+                          );
+                        })}
                         {order.items.length > 3 && (
                           <span className="text-xs text-muted-foreground">+{order.items.length - 3} more</span>
                         )}
@@ -760,11 +777,11 @@ export default function ProfilePage() {
             )}
           </div>
           <div className="flex justify-end">
-            <Button asChild>
-              <Link href="/orders">View All Orders</Link>
-            </Button>
-          </div>
-        </Card>
+                  <Button asChild>
+                    <Link href="/orders">View All Orders</Link>
+                  </Button>
+                </div>
+          </Card>
       </div>
     
       {/* Crop Modal */}

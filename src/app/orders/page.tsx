@@ -239,87 +239,106 @@ export default function OrdersPage() {
         ) : (
           <>
             <div className="space-y-6">
-              {orders.map((order) => (
-                <Card key={order.id} className="overflow-hidden hover:shadow-md transition-shadow">
-                  <CardHeader className="pb-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle className="text-lg">Order #{order.id}</CardTitle>
-                        <CardDescription className="flex items-center gap-2 mt-1">
-                          <Calendar className="h-4 w-4" />
-                          {new Date(order.createdAt).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </CardDescription>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {getStatusDescription(order.status)}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Badge className={`${getStatusColor(order.status)} mr-2`}>
-                          <span className="mr-1">{getStatusIcon(order.status)}</span>
-                          {order.status}
-                        </Badge>
-                        <Badge variant={order.paymentStatus === 'PAID' ? 'success' : 'destructive'}>
-                          {order.paymentStatus}
-                        </Badge>
-                        <div className="text-right">
-                          <div className="flex items-center gap-1 text-lg font-bold">
-                            ₹{order.total.toFixed(2)}
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            {order.items.length} item{order.items.length !== 1 ? 's' : ''}
+              {orders.map((order) => {
+                const isPaid = order.status === 'DELIVERED' || order.paymentStatus === 'PAID';
+                return (
+                  <Card key={order.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                    <CardHeader className="pb-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle className="text-lg">Order #{order.id}</CardTitle>
+                          <CardDescription className="flex items-center gap-2 mt-1">
+                            <Calendar className="h-4 w-4" />
+                            {new Date(order.createdAt).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </CardDescription>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {getStatusDescription(order.status)}
                           </p>
                         </div>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {order.items.slice(0, 3).map((item) => (
-                          <div key={item.id} className="flex items-center gap-3 p-3 border rounded-lg">
-                            {Array.isArray(item.product.imageUrls) && item.product.imageUrls.length > 0 && (
-                              <Image
-                                src={item.product.imageUrls[0]}
-                                alt={item.product.name}
-                                width={50}
-                                height={50}
-                                className="object-cover rounded"
-                              />
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-sm truncate">{item.product.name}</p>
-                              <p className="text-xs text-muted-foreground">
-                                Qty: {item.quantity} × ₹{item.price.toFixed(2)}
-                              </p>
+                        <div className="flex items-center gap-3">
+                          <Badge className={`${getStatusColor(order.status)} mr-2`}>
+                            <span className="mr-1">{getStatusIcon(order.status)}</span>
+                            {order.status}
+                          </Badge>
+                          <Badge variant={order.paymentStatus === 'PAID' ? 'success' : 'destructive'}>
+                            {order.paymentStatus}
+                          </Badge>
+                          <div className="text-right">
+                            <div className="flex items-center gap-1 text-lg font-bold">
+                              ₹{order.total.toFixed(2)}
                             </div>
-                          </div>
-                        ))}
-                        {order.items.length > 3 && (
-                          <div className="flex items-center justify-center p-3 border rounded-lg bg-muted/50">
-                            <p className="text-sm text-muted-foreground">
-                              +{order.items.length - 3} more items
+                            <p className="text-xs text-muted-foreground">
+                              {order.items.length} item{order.items.length !== 1 ? 's' : ''}
                             </p>
                           </div>
-                        )}
+                        </div>
                       </div>
-                      <div className="flex justify-end pt-4 border-t">
-                        <Button variant="outline" size="sm" asChild>
-                          <Link href={`/orders/${order.id}`} className="flex items-center gap-2">
-                            <Eye className="h-4 w-4" />
-                            View Details
-                          </Link>
-                        </Button>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {order.items.slice(0, 3).map((item) => {
+                            const productContent = (
+                              <>
+                                {Array.isArray(item.product.imageUrls) && item.product.imageUrls.length > 0 && (
+                                  <Image
+                                    src={item.product.imageUrls[0]}
+                                    alt={item.product.name}
+                                    width={50}
+                                    height={50}
+                                    className="object-cover rounded"
+                                  />
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium text-sm truncate">{item.product.name}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    Qty: {item.quantity} × ₹{item.price.toFixed(2)}
+                                  </p>
+                                </div>
+                              </>
+                            );
+                            return isPaid ? (
+                              <Link
+                                key={item.id}
+                                href={`/products/${item.product.id}`}
+                                className="flex items-center gap-3 p-3 border rounded-lg hover:bg-muted transition-colors"
+                                title={item.product.name}
+                              >
+                                {productContent}
+                              </Link>
+                            ) : (
+                              <div key={item.id} className="flex items-center gap-3 p-3 border rounded-lg opacity-60 cursor-not-allowed" title={item.product.name}>
+                                {productContent}
+                              </div>
+                            );
+                          })}
+                          {order.items.length > 3 && (
+                            <div className="flex items-center justify-center p-3 border rounded-lg bg-muted/50">
+                              <p className="text-sm text-muted-foreground">
+                                +{order.items.length - 3} more items
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex justify-end pt-4 border-t">
+                          <Button variant="outline" size="sm" asChild>
+                            <Link href={`/orders/${order.id}`} className="flex items-center gap-2">
+                              <Eye className="h-4 w-4" />
+                              View Details
+                            </Link>
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
 
             {/* Pagination */}

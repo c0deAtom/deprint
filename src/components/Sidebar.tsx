@@ -9,11 +9,10 @@ const categories = [
   "Pots",
   "Keychain",
   "3Dcube",
-  "Electronics",
-  "Home & Garden",
+  
+ 
   "Fashion",
-  "Books",
-  "Sports",
+
   "Other"
 ];
 
