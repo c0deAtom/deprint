@@ -45,6 +45,8 @@ interface Order {
       mobile: string;
     };
   };
+  trackingLink?: string;
+  adminMessage?: string;
 }
 
 interface OrderItem {
@@ -121,6 +123,10 @@ export default function AdminPage() {
     "Sports",
     "Other"
   ];
+
+  // Keep orderNotes in sync with orders
+  const [orderNotes, setOrderNotes] = useState<Record<string, { trackingLink: string; adminMessage: string }>>({});
+  const [orderNotesLoading, setOrderNotesLoading] = useState<Record<string, boolean>>({});
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -441,6 +447,54 @@ export default function AdminPage() {
     product.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     product.category?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Keep orderNotes in sync with orders
+  useEffect(() => {
+    const notes: Record<string, { trackingLink: string; adminMessage: string }> = {};
+    orders.forEach(order => {
+      notes[order.id] = {
+        trackingLink: order.trackingLink || "",
+        adminMessage: order.adminMessage || "",
+      };
+    });
+    setOrderNotes(notes);
+  }, [orders]);
+
+  const handleOrderNoteChange = (orderId: string, field: 'trackingLink' | 'adminMessage', value: string) => {
+    setOrderNotes(prev => ({
+      ...prev,
+      [orderId]: {
+        ...prev[orderId],
+        [field]: value,
+      },
+    }));
+  };
+
+  const handleOrderNoteSave = async (orderId: string) => {
+    setOrderNotesLoading(prev => ({ ...prev, [orderId]: true }));
+    try {
+      const token = localStorage.getItem("adminToken");
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers.Authorization = `Bearer ${token}`;
+      const res = await fetch(`/api/admin/orders/${orderId}`, {
+        method: "PUT",
+        headers,
+        body: JSON.stringify({
+          trackingLink: orderNotes[orderId]?.trackingLink,
+          adminMessage: orderNotes[orderId]?.adminMessage,
+        }),
+      });
+      if (res.ok) {
+        toast.success("Order details updated!");
+        fetchOrders();
+      } else {
+        toast.error("Failed to update order details");
+      }
+    } catch {
+      toast.error("Error updating order details");
+    }
+    setOrderNotesLoading(prev => ({ ...prev, [orderId]: false }));
+  };
 
   if (loading) {
     return (
@@ -890,6 +944,38 @@ export default function AdminPage() {
                             </SelectContent>
                           </Select>
                         </div>
+                      </div>
+
+                      {/* Tracking Link & Admin Message */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                        <div>
+                          <label className="text-sm font-medium">Tracking Link</label>
+                          <Input
+                            type="url"
+                            placeholder="https://..."
+                            value={orderNotes[order.id]?.trackingLink || ""}
+                            onChange={e => handleOrderNoteChange(order.id, 'trackingLink', e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Admin Message</label>
+                          <Input
+                            placeholder="Message for user (optional)"
+                            value={orderNotes[order.id]?.adminMessage || ""}
+                            onChange={e => handleOrderNoteChange(order.id, 'adminMessage', e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex justify-end mt-2">
+                        <Button
+                          size="sm"
+                          onClick={() => handleOrderNoteSave(order.id)}
+                          disabled={orderNotesLoading[order.id]}
+                        >
+                          {orderNotesLoading[order.id] ? "Saving..." : "Save"}
+                        </Button>
                       </div>
 
                       {/* Order Items */}

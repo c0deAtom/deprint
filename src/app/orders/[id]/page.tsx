@@ -8,6 +8,28 @@ import { Package, Truck, CheckCircle, Clock, Phone, Mail } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
+type OrderWithExtras = {
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+  userId: string | null;
+  status: string;
+  total: number;
+  shippingAddress: unknown;
+  paymentId?: string | null;
+  paymentStatus?: string;
+  paymentMethod?: string | null;
+  trackingLink?: string;
+  adminMessage?: string;
+  user?: { name?: string | null; email: string } | null;
+  items: Array<{
+    id: string;
+    product: { id: string; name: string; imageUrls: string[] };
+    quantity: number;
+    price: number;
+  }>;
+};
+
 export default async function OrderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const order = await prisma.order.findUnique({
@@ -16,7 +38,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
       user: { select: { email: true, name: true } },
       items: { include: { product: true } },
     },
-  });
+  }) as unknown as OrderWithExtras;
 
   if (!order) return notFound();
 
@@ -103,6 +125,19 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                 <p className="text-sm text-muted-foreground">
                   {getStatusDescription(order.status)}
                 </p>
+                {/* Tracking Link and Admin Message */}
+                {order.trackingLink && (
+                  <div className="bg-blue-50 border border-blue-200 rounded p-3 mt-2">
+                    <span className="font-medium text-blue-800">Track your order: </span>
+                    <a href={order.trackingLink} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline break-all">{order.trackingLink}</a>
+                  </div>
+                )}
+                {order.adminMessage && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded p-3 mt-2">
+                    <span className="font-medium text-yellow-800">Note from Admin: </span>
+                    <span className="text-yellow-900">{order.adminMessage}</span>
+                  </div>
+                )}
                 {order.status !== 'CANCELLED' && order.status !== 'DELIVERED' && (
                   <div className="bg-blue-50 p-4 rounded-lg">
                     <p className="text-sm font-medium text-blue-900">Estimated Delivery</p>

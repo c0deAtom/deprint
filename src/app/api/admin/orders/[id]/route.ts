@@ -6,12 +6,16 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { status } = await request.json();
+    const { status, trackingLink, adminMessage } = await request.json();
     const { id } = await params;
     
+    const updateData: Record<string, unknown> = {};
+    if (status !== undefined) updateData.status = status;
+    if (trackingLink !== undefined) updateData.trackingLink = trackingLink;
+    if (adminMessage !== undefined) updateData.adminMessage = adminMessage;
     const order = await prisma.order.update({
       where: { id },
-      data: { status },
+      data: updateData,
     });
 
     return NextResponse.json(order);

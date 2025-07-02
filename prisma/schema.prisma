@@ -85,6 +85,8 @@ model Order {
   paymentId       String?
   paymentStatus   PaymentStatus @default(UNPAID)
   paymentMethod   String?
+  trackingLink    String?
+  adminMessage    String?
   user            User?       @relation(fields: [userId], references: [id])
   items           OrderItem[]
 }

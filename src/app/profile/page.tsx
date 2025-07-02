@@ -48,6 +48,8 @@ interface Order {
   total: number;
   items: OrderItem[];
   paymentStatus?: string;
+  trackingLink?: string;
+  adminMessage?: string;
 }
 
 export default function ProfilePage() {
@@ -671,7 +673,7 @@ export default function ProfilePage() {
                   <Label htmlFor="city">City</Label>
                   <Input id="city" name="city" value={addressForm.city} onChange={handleAddressInputChange} placeholder="City" className={addressErrors.city ? "border-red-500 focus:border-red-500" : ""} />
                   {addressErrors.city && <p className="text-red-500 text-xs mt-1">{addressErrors.city}</p>}
-                </div>
+                  </div>
                 <div>
                   <Label htmlFor="state">State</Label>
                   <Input id="state" name="state" value={addressForm.state} onChange={handleAddressInputChange} placeholder="State" className={addressErrors.state ? "border-red-500 focus:border-red-500" : ""} />
@@ -710,7 +712,7 @@ export default function ProfilePage() {
             ) : (
               <Button variant="outline" size="sm" onClick={() => setIsAddressEditing(true)}>
                 <Edit className="h-4 w-4 mr-2" /> Edit Address
-              </Button>
+                  </Button>
             )}
           </div>
         </Card>
@@ -736,6 +738,19 @@ export default function ProfilePage() {
                         <span className="text-xs text-muted-foreground">{new Date(order.createdAt).toLocaleDateString()}</span>
                       </div>
                       <div className="text-xs text-muted-foreground mb-1">Total: ₹{order.total.toFixed(2)}</div>
+                      {/* Tracking Link and Admin Message */}
+                      {order.trackingLink && (
+                        <div className="bg-blue-50 border border-blue-200 rounded p-2 my-1">
+                          <span className="font-medium text-blue-800">Track: </span>
+                          <a href={order.trackingLink} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline break-all">{order.trackingLink}</a>
+                        </div>
+                      )}
+                      {order.adminMessage && (
+                        <div className="bg-yellow-50 border border-yellow-200 rounded p-2 my-1">
+                          <span className="font-medium text-yellow-800">Note: </span>
+                          <span className="text-yellow-900">{order.adminMessage}</span>
+                        </div>
+                      )}
                       <div className="flex flex-wrap gap-2">
                         {order.items.slice(0, 3).map((item: OrderItem) => {
                           const productContent = (
@@ -769,9 +784,9 @@ export default function ProfilePage() {
                       <div className="flex justify-end mt-2">
                         <Button asChild size="sm" variant="outline">
                           <Link href={`/orders/${order.id}`}>View Details</Link>
-                        </Button>
-                      </div>
-                    </Card>
+                  </Button>
+                </div>
+            </Card>
                   );
                 })}
               </div>

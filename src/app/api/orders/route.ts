@@ -51,7 +51,8 @@ export async function GET(req: NextRequest) {
                 }
               }
             }
-          }
+          },
+          // trackingLink and adminMessage are scalar fields, included by default
         },
         orderBy: { createdAt: 'desc' },
         skip,

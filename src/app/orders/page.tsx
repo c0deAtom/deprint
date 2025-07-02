@@ -28,6 +28,8 @@ interface Order {
       imageUrls: string[];
     };
   }>;
+  trackingLink?: string;
+  adminMessage?: string;
 }
 
 interface OrdersResponse {
@@ -242,7 +244,14 @@ export default function OrdersPage() {
               {orders.map((order) => {
                 const isPaid = order.status === 'DELIVERED' || order.paymentStatus === 'PAID';
                 return (
-                  <Card key={order.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                  <Card key={order.id} className="overflow-hidden hover:shadow-md transition-shadow relative">
+                    {/* Status badge in top right */}
+                    <div className="absolute top-4 right-4 z-10">
+                      <Badge className={`${getStatusColor(order.status)} mr-2`}>
+                        <span className="mr-1">{getStatusIcon(order.status)}</span>
+                        {order.status}
+                      </Badge>
+                    </div>
                     <CardHeader className="pb-4">
                       <div className="flex items-center justify-between">
                         <div>
@@ -260,12 +269,20 @@ export default function OrdersPage() {
                           <p className="text-sm text-muted-foreground mt-1">
                             {getStatusDescription(order.status)}
                           </p>
+                          {order.trackingLink && (
+                            <div className="bg-blue-50 border border-blue-200 rounded p-2 my-1">
+                              <span className="font-medium text-blue-800">Track: </span>
+                              <a href={order.trackingLink} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline break-all">{order.trackingLink}</a>
+                            </div>
+                          )}
+                          {order.adminMessage && (
+                            <div className="bg-yellow-50 border border-yellow-200 rounded p-2 my-1">
+                              <span className="font-medium text-yellow-800">Note: </span>
+                              <span className="text-yellow-900">{order.adminMessage}</span>
+                            </div>
+                          )}
                         </div>
-                        <div className="flex items-center gap-3">
-                          <Badge className={`${getStatusColor(order.status)} mr-2`}>
-                            <span className="mr-1">{getStatusIcon(order.status)}</span>
-                            {order.status}
-                          </Badge>
+                        <div className="flex items-center gap-3 pl-20">
                           <Badge variant={order.paymentStatus === 'PAID' ? 'success' : 'destructive'}>
                             {order.paymentStatus}
                           </Badge>
