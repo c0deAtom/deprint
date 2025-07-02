@@ -47,6 +47,7 @@ interface Order {
   createdAt: string;
   total: number;
   items: OrderItem[];
+  paymentStatus?: string;
 }
 
 export default function ProfilePage() {
@@ -726,7 +727,7 @@ export default function ProfilePage() {
             ) : (
               <div className="space-y-4">
                 {orders.map((order: Order) => {
-                  const isPaid = order.status === 'DELIVERED' || (order as any).paymentStatus === 'PAID';
+                  const isPaid = order.status === 'DELIVERED' || order.paymentStatus === 'PAID';
                   return (
                     <Card key={order.id} className="bg-muted/50 p-3">
                       <div className="flex items-center justify-between mb-1">
@@ -802,11 +803,13 @@ export default function ProfilePage() {
                   aspect={1}
                   circularCrop
                 >
-                  <img
+                  <Image
                     id="crop-image"
                     ref={cropImageRef}
                     src={imageUrl}
                     alt="Crop"
+                    width={256}
+                    height={256}
                     onLoad={handleCropImageLoaded}
                     style={{ maxWidth: '100%', maxHeight: '16rem', width: 'auto', height: 'auto', display: 'block', margin: '0 auto' }}
                     className="rounded-full"
@@ -815,7 +818,7 @@ export default function ProfilePage() {
                 {croppedImage && (
                   <div className="flex flex-col items-center mt-4">
                     <span className="text-xs text-muted-foreground mb-1">Preview</span>
-                    <img src={croppedImage} alt="Cropped Preview" className="h-24 w-24 rounded-full border" />
+                    <Image src={croppedImage} alt="Cropped Preview" width={96} height={96} className="h-24 w-24 rounded-full border" />
                   </div>
                 )}
               </>
